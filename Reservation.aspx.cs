@@ -4,11 +4,11 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Web.UI.WebControls;
 
-namespace restaurant
+namespace WebAplication1
 {
     public partial class Reservation : System.Web.UI.Page
     {
-        private int _pageSize = 5; // Số lượng đặt bàn hiển thị trên mỗi trang
+        private int _pageSize = 5; 
         private int _currentPage
         {
             get { return (int)(ViewState["CurrentPage"] ?? 0); }
@@ -47,24 +47,29 @@ namespace restaurant
                         conditions.Add("CONVERT(time, r.DateTime) = @Time");
                         parameters.Add(new SqlParameter("@Time", txtTime.Text.Trim()));
                     }
+                    if (!string.IsNullOrEmpty(ddlStatus.SelectedValue))
+                    {
+                        conditions.Add("r.Status = @Status");
+                        parameters.Add(new SqlParameter("@Status", ddlStatus.SelectedValue));
+                    }
                     if (!string.IsNullOrEmpty(txtTableID.Text.Trim()))
                     {
                         conditions.Add("r.TableID = @TableID");
                         parameters.Add(new SqlParameter("@TableID", txtTableID.Text.Trim()));
                     }
 
-                    // Truy vấn dữ liệu
+                    
                     string query = @"
-                SELECT r.ReservationID, u.Username, r.TableID, r.DateTime
-                FROM Reservation r
-                INNER JOIN Users u ON r.UserID = u.UserID";
+                        SELECT r.ReservationID, r.UserID, u.Username, r.TableID, r.Status, r.DateTime
+                        FROM Reservation r
+                        INNER JOIN Users u ON r.UserID = u.UserID";
 
                     if (conditions.Count > 0)
                     {
                         query += " WHERE " + string.Join(" AND ", conditions);
                     }
 
-                    query += " ORDER BY r.DateTime DESC";
+                    query += " ORDER BY \r\n    CASE WHEN r.Status = 0 THEN 0 ELSE 1 END,  \r\n    r.DateTime ASC  \r\n";
 
                     SqlCommand cmd = new SqlCommand(query, clsDatabase.con);
                     cmd.Parameters.AddRange(parameters.ToArray());
@@ -74,7 +79,7 @@ namespace restaurant
                     da.Fill(dt);
                     clsDatabase.CloseConnection();
 
-                    // Phân trang dữ liệu
+                    
                     PagedDataSource pds = new PagedDataSource
                     {
                         DataSource = dt.DefaultView,
@@ -85,11 +90,11 @@ namespace restaurant
 
                     ViewState["TotalPages"] = pds.PageCount;
 
-                    // Hiển thị lên GridView
+                    
                     GridViewReservations.DataSource = pds;
                     GridViewReservations.DataBind();
 
-                    // Cập nhật trạng thái phân trang
+                    
                     btnPrevious.Enabled = _currentPage > 0;
                     btnNext.Enabled = _currentPage < (int)ViewState["TotalPages"] - 1;
 
@@ -106,15 +111,12 @@ namespace restaurant
             }
         }
 
-
-        // Sự kiện khi nhấn nút "Filter"
         protected void btnFilter_Click(object sender, EventArgs e)
         {
             _currentPage = 0; // Reset về trang đầu tiên khi áp dụng bộ lọc
             BindData();
         }
 
-        // Sự kiện khi nhấn nút "Cancel"
         protected void btnCancelFilter_Click(object sender, EventArgs e)
         {
             // Reset các trường lọc về giá trị mặc định
@@ -131,46 +133,146 @@ namespace restaurant
         {
             int reservationID = Convert.ToInt32(e.CommandArgument);
 
-            //if (e.CommandName == "ChangeStatus")
-            //{
-            //    ChangeStatus(reservationID);
-            //}
-            //else
             if (e.CommandName == "EditReservation")
             {
-                Response.Redirect($"EditReservation.aspx?ReservationID={reservationID}");
+
+                GridViewRow row = (GridViewRow)((Button)e.CommandSource).NamingContainer;
+                int rowIndex = row.RowIndex;
+                GridViewReservations.EditIndex = rowIndex; // Chuyển dòng sang chế độ chỉnh sửa
+                BindData(); // Load dữ liệu vào dropdown
+            }
+            else if (e.CommandName == "UpdateReservation")
+            {
+                GridViewRow row = (GridViewRow)((Button)e.CommandSource).NamingContainer;
+                int rowIndex = row.RowIndex;
+
+                // Lấy ReservationID từ DataKeys
+                int editReservationID = Convert.ToInt32(GridViewReservations.DataKeys[rowIndex].Value);
+
+                // Lấy dữ liệu từ dropdown
+                DropDownList ddlUsername = (DropDownList)row.FindControl("ddlUsername");
+                DropDownList ddlTableID = (DropDownList)row.FindControl("ddlTableID");
+                DropDownList ddlStatus = (DropDownList)row.FindControl("ddlStatus");
+                TextBox txtDateTime = (TextBox)row.FindControl("txtDateTime");
+
+                if (ddlUsername != null && ddlTableID != null && ddlStatus != null && txtDateTime != null)
+                {
+                    try
+                    {
+                        if (clsDatabase.OpenConnection())
+                        {
+                            // Chuyển đổi DateTime từ chuỗi nhập vào thành kiểu DateTime trong C#
+                            DateTime parsedDateTime;
+                            bool isValidDateTime = DateTime.TryParse(txtDateTime.Text, out parsedDateTime);
+
+                            if (!isValidDateTime)
+                            {
+                                Response.Write("Lỗi: Định dạng ngày giờ không hợp lệ.");
+                                return;
+                            }
+
+                            string query = "UPDATE Reservation SET UserID = @UserID, TableID = @TableID, Status = @Status, DateTime = @DateTime WHERE ReservationID = @ReservationID";
+                            SqlCommand cmd = new SqlCommand(query, clsDatabase.con);
+                            cmd.Parameters.AddWithValue("@UserID", ddlUsername.SelectedValue);
+                            cmd.Parameters.AddWithValue("@TableID", ddlTableID.SelectedValue);
+                            cmd.Parameters.AddWithValue("@Status", ddlStatus.SelectedValue);
+
+                            // Định dạng DateTime trước khi truyền vào SQL
+                            cmd.Parameters.AddWithValue("@DateTime", parsedDateTime.ToString("yyyy-MM-dd HH:mm:ss"));
+
+                            cmd.Parameters.AddWithValue("@ReservationID", editReservationID);
+
+                            cmd.ExecuteNonQuery();
+                            clsDatabase.CloseConnection();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Response.Write("Lỗi khi cập nhật: " + ex.Message);
+                    }
+                }
+
+                GridViewReservations.EditIndex = -1; // Thoát chế độ chỉnh sửa
+                BindData();
+            }
+
+
+
+            else if (e.CommandName == "CancelReservation")
+            {
+                GridViewReservations.EditIndex = -1; // Hủy chỉnh sửa
+                BindData();
             }
             else if (e.CommandName == "DeleteReservation")
             {
                 DeleteReservation(reservationID);
             }
         }
+        protected void GridViewReservations_RowDataBound(object sender, GridViewRowEventArgs e)
+        {
+            try
+            {
+                if (e.Row.RowType == DataControlRowType.DataRow && e.Row.RowIndex == GridViewReservations.EditIndex)
+                {
+                    DropDownList ddlUsername = (DropDownList)e.Row.FindControl("ddlUsername");
+                    DropDownList ddlTableID = (DropDownList)e.Row.FindControl("ddlTableID");
+                    DropDownList ddlStatus = (DropDownList)e.Row.FindControl("ddlStatus");
+                    TextBox txtDateTime = (TextBox)e.Row.FindControl("txtDateTime");
+
+                    DataRowView rowView = (DataRowView)e.Row.DataItem;
+                    string currentUserID = rowView["UserID"].ToString();  // Đảm bảo lấy được UserID
+                    string currentTableID = rowView["TableID"].ToString();
+                    bool currentStatus = Convert.ToBoolean(rowView["Status"]);
+                    DateTime currentDateTime = Convert.ToDateTime(rowView["DateTime"]);
+
+                    if (ddlUsername != null)
+                    {
+                        ddlUsername.DataSource = GetUsers();  // Phải trả về cả UserID và Username
+                        ddlUsername.DataTextField = "Username";  // Hiển thị Username
+                        ddlUsername.DataValueField = "UserID";  // Lưu giá trị theo UserID
+                        ddlUsername.DataBind();
+
+                        // Chọn UserID hiện tại
+                        ddlUsername.SelectedValue = currentUserID;
+                    }
+
+                    if (ddlTableID != null)
+                    {
+                        ddlTableID.DataSource = GetTables();
+                        ddlTableID.DataTextField = "TableID";
+                        ddlTableID.DataValueField = "TableID";
+                        ddlTableID.DataBind();
+                        ddlTableID.SelectedValue = currentTableID;
+                    }
+                    if (ddlStatus != null)
+                    {
+                        // Clear items trước để tránh lỗi duplicate
+                        ddlStatus.Items.Clear();
+                        ddlStatus.Items.Add(new ListItem("Waiting", "0"));
+                        ddlStatus.Items.Add(new ListItem("Completed", "1"));
+                        ddlStatus.DataBind();
+
+                        // Set giá trị tương ứng
+                        ddlStatus.SelectedValue = currentStatus ? "1" : "0";
+                    }
+
+                    if (txtDateTime != null)
+                    {
+                        txtDateTime.Text = currentDateTime.ToString("yyyy-MM-ddTHH:mm"); // Format chuẩn HTML datetime-local
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Response.Write("Lỗi: " + ex.Message);
+            }
+        }
+
 
         protected void btnNewReservation_Click(object sender, EventArgs e)
         {
             Response.Redirect("CreateReservation.aspx");
         }
-
-        //private void ChangeStatus(int reservationID)
-        //{
-        //    try
-        //    {
-        //        if (clsDatabase.OpenConnection())
-        //        {
-        //            // Cập nhật trạng thái của đặt bàn
-        //            string query = "UPDATE Reservation SET Status = CASE WHEN Status = 'Pending' THEN 'Completed' ELSE 'Pending' END WHERE ReservationID = @ReservationID";
-        //            SqlCommand cmd = new SqlCommand(query, clsDatabase.con);
-        //            cmd.Parameters.AddWithValue("@ReservationID", reservationID);
-        //            cmd.ExecuteNonQuery();
-        //            clsDatabase.CloseConnection();
-        //            BindData();
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Response.Write("Lỗi khi cập nhật trạng thái: " + ex.Message);
-        //    }
-        //}
 
         private void DeleteReservation(int reservationID)
         {
@@ -193,7 +295,6 @@ namespace restaurant
             }
         }
 
-        // Xử lý chuyển trang
         protected void btnPrevious_Click(object sender, EventArgs e)
         {
             _currentPage--;
@@ -205,5 +306,48 @@ namespace restaurant
             _currentPage++;
             BindData();
         }
+
+        private DataTable GetUsers()
+        {
+            DataTable dt = new DataTable();
+            try
+            {
+                if (clsDatabase.OpenConnection())
+                {
+                    string query = "SELECT UserID, Username FROM Users ORDER BY Username";
+                    SqlCommand cmd = new SqlCommand(query, clsDatabase.con);
+                    SqlDataAdapter da = new SqlDataAdapter(cmd);
+                    da.Fill(dt);
+                    clsDatabase.CloseConnection();
+                }
+            }
+            catch (Exception ex)
+            {
+                Response.Write("Lỗi khi lấy danh sách Users: " + ex.Message);
+            }
+            return dt;
+        }
+
+        private DataTable GetTables()
+        {
+            DataTable dt = new DataTable();
+            try
+            {
+                if (clsDatabase.OpenConnection())
+                {
+                    string query = "SELECT TableID FROM Tables ORDER BY TableID";
+                    SqlCommand cmd = new SqlCommand(query, clsDatabase.con);
+                    SqlDataAdapter da = new SqlDataAdapter(cmd);
+                    da.Fill(dt);
+                    clsDatabase.CloseConnection();
+                }
+            }
+            catch (Exception ex)
+            {
+                Response.Write("Lỗi khi lấy danh sách Tables: " + ex.Message);
+            }
+            return dt;
+        }
+
     }
 }

@@ -1,4 +1,4 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="CreateReservation.aspx.cs" Inherits="restaurant.CreateReservation" %>
+﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="CreateReservation.aspx.cs" Inherits="WebAplication1.CreateReservation" %>
 
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -28,7 +28,7 @@
             display: block;
             margin-bottom: 5px;
         }
-        .form-group input {
+        .form-group input, .form-group select {
             width: 100%;
             padding: 8px;
             border-radius: 5px;
@@ -55,12 +55,12 @@
         <h2>Tạo đặt bàn mới</h2>
         <form id="form1" runat="server">
             <div class="form-group">
-                <label for="txtUserID">User ID</label>
-                <asp:TextBox ID="txtUserID" runat="server"></asp:TextBox>
+                <label for="ddlUsername">Chọn Username</label>
+                <asp:DropDownList ID="ddlUsername" runat="server"></asp:DropDownList>
             </div>
             <div class="form-group">
-                <label for="txtTableID">Table ID</label>
-                <asp:TextBox ID="txtTableID" runat="server"></asp:TextBox>
+                <label for="ddlTableID">Chọn Table ID</label>
+                <asp:DropDownList ID="ddlTableID" runat="server"></asp:DropDownList>
             </div>
             <div class="form-group">
                 <label for="txtDateTime">Thời gian đến</label>

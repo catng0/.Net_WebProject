@@ -4,7 +4,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Web.UI.WebControls;
 
-namespace restaurant
+namespace WebAplication1
 {
     public partial class Table : System.Web.UI.Page
     {
