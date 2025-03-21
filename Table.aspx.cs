@@ -32,7 +32,6 @@ namespace WebAplication1
                     List<string> conditions = new List<string>();
                     List<SqlParameter> parameters = new List<SqlParameter>();
 
-                    // Xử lý bộ lọc
                     if (!string.IsNullOrEmpty(txtSeatsFilter.Text.Trim()))
                     {
                         conditions.Add("Seats >= @Seats");
@@ -59,7 +58,7 @@ namespace WebAplication1
                     da.Fill(dt);
                     clsDatabase.CloseConnection();
 
-                    // Phân trang chính xác theo _currentPage
+                    // Phân trang theo _currentPage
                     PagedDataSource pds = new PagedDataSource
                     {
                         DataSource = dt.DefaultView,
@@ -70,7 +69,7 @@ namespace WebAplication1
 
                     ViewState["TotalPages"] = pds.PageCount;
 
-                    // Lấy đúng dữ liệu theo trang hiện tại
+                    // Lấy dữ liệu của trang hiện tại
                     DataTable dtPaged = dt.Clone();
                     int startIndex = _currentPage * _pageSize;
                     int endIndex = Math.Min(startIndex + _pageSize, dt.Rows.Count);
@@ -80,13 +79,11 @@ namespace WebAplication1
                         dtPaged.ImportRow(dt.Rows[i]);
                     }
 
-                    // Chia nhỏ cho hai GridView
-                    // Chia dữ liệu cho 2 GridView
                     DataTable dt1 = dtPaged.Clone();
                     DataTable dt2 = dtPaged.Clone();
 
                     int totalRows = dtPaged.Rows.Count;
-                    int halfSize = (totalRows + 1) / 2; // GridView1 luôn chứa nhiều hơn nếu lẻ
+                    int halfSize = (totalRows + 1) / 2; 
 
                     for (int i = 0; i < totalRows; i++)
                     {
@@ -105,8 +102,6 @@ namespace WebAplication1
                     GridView2.DataSource = dt2;
                     GridView2.DataBind();
 
-
-                    // Cập nhật trạng thái nút chuyển trang
                     btnPrevious.Enabled = _currentPage > 0;
                     btnNext.Enabled = _currentPage < (int)ViewState["TotalPages"] - 1;
                     lblPageInfo.Text = $"{_currentPage + 1}";
@@ -118,19 +113,35 @@ namespace WebAplication1
             }
         }
 
-
         protected void GridView_RowCommand(object sender, GridViewCommandEventArgs e)
         {
+            GridView grid = (GridView)sender; 
+
             if (e.CommandName == "ChangeStatus")
             {
                 int tableID = Convert.ToInt32(e.CommandArgument);
-                ChangeStatus(tableID);
+                try
+                {
+                    if (clsDatabase.OpenConnection())
+                    {
+                        string query = "UPDATE Tables SET Status = CASE WHEN Status = 'Available' THEN 'Reserved' ELSE 'Available' END WHERE TableID = @TableID";
+                        SqlCommand cmd = new SqlCommand(query, clsDatabase.con);
+                        cmd.Parameters.AddWithValue("@TableID", tableID);
+                        cmd.ExecuteNonQuery();
+                        clsDatabase.CloseConnection();
+                        BindData();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Response.Write("Lỗi khi cập nhật trạng thái: " + ex.Message);
+                }
             }
             else if (e.CommandName == "EditTable")
             {
                 GridViewRow row = (GridViewRow)((Button)e.CommandSource).NamingContainer;
                 int rowIndex = row.RowIndex;
-                GridView1.EditIndex = rowIndex; // Chuyển dòng sang chế độ chỉnh sửa
+                grid.EditIndex = rowIndex; 
                 BindData();
             }
             else if (e.CommandName == "UpdateTable")
@@ -138,33 +149,29 @@ namespace WebAplication1
                 GridViewRow row = (GridViewRow)((Button)e.CommandSource).NamingContainer;
                 int rowIndex = row.RowIndex;
 
-                // Đảm bảo DataKeys không bị null và rowIndex hợp lệ
-                if (GridView1.DataKeys != null && rowIndex >= 0 && rowIndex < GridView1.DataKeys.Count)
+                if (grid.DataKeys != null && rowIndex >= 0 && rowIndex < grid.DataKeys.Count)
                 {
-                    int tableID = Convert.ToInt32(GridView1.DataKeys[rowIndex].Value);
-                    TextBox txtSeats = (TextBox)row.FindControl("txtSeats");
-
+                    int tableID = Convert.ToInt32(grid.DataKeys[rowIndex].Value);
+                    TextBox txtSeats = (TextBox)row.FindControl("txtSeatsEdit");
+                    
                     if (txtSeats != null)
                     {
                         string newSeats = txtSeats.Text.Trim();
-                        if (!string.IsNullOrEmpty(newSeats))
+                        if (int.TryParse(newSeats, out int seats) && seats > 0)
                         {
                             try
                             {
-                                if (clsDatabase.OpenConnection())
+                                clsDatabase.OpenConnection();
+                                string query = "UPDATE Tables SET Seats = @Seats WHERE TableID = @TableID";
+                                SqlCommand cmd = new SqlCommand(query, clsDatabase.con);
+                                cmd.Parameters.AddWithValue("@Seats", newSeats);
+                                cmd.Parameters.AddWithValue("@TableID", tableID);
+                                int rowsAffected = cmd.ExecuteNonQuery();
+                                clsDatabase.CloseConnection();
+
+                                if (rowsAffected <= 0)
                                 {
-                                    string query = "UPDATE Tables SET Seats = @Seats WHERE TableID = @TableID";
-                                    SqlCommand cmd = new SqlCommand(query, clsDatabase.con);
-                                    cmd.Parameters.AddWithValue("@Seats", newSeats);
-                                    cmd.Parameters.AddWithValue("@TableID", tableID);
-
-                                    int rowsAffected = cmd.ExecuteNonQuery();
-                                    clsDatabase.CloseConnection();
-
-                                    if (rowsAffected <= 0)
-                                    {
-                                        Response.Write("Không có dòng nào được cập nhật. Kiểm tra TableID!");
-                                    }
+                                    Response.Write("Không có dòng nào được cập nhật. Kiểm tra TableID!");
                                 }
                             }
                             catch (Exception ex)
@@ -177,65 +184,38 @@ namespace WebAplication1
                             Response.Write("Vui lòng nhập số ghế hợp lệ.");
                         }
                     }
-
                 }
 
-                GridView1.EditIndex = -1; // Thoát chế độ chỉnh sửa
+                grid.EditIndex = -1; 
                 BindData();
             }
             else if (e.CommandName == "CancelEdit")
             {
-                GridView1.EditIndex = -1; // Hủy chỉnh sửa
+                grid.EditIndex = -1;
                 BindData();
             }
             else if (e.CommandName == "DeleteTable")
             {
                 int tableID = Convert.ToInt32(e.CommandArgument);
-                DeleteTable(tableID);
-            }
-        }
-
-        private void ChangeStatus(int tableID)
-        {
-            try
-            {
-                if (clsDatabase.OpenConnection())
+                try
                 {
-                    string query = "UPDATE Tables SET Status = CASE WHEN Status = 'Available' THEN 'Reserved' ELSE 'Available' END WHERE TableID = @TableID";
-                    SqlCommand cmd = new SqlCommand(query, clsDatabase.con);
-                    cmd.Parameters.AddWithValue("@TableID", tableID);
-                    cmd.ExecuteNonQuery();
-                    clsDatabase.CloseConnection();
-                    BindData();
+                    if (clsDatabase.OpenConnection())
+                    {
+                        string query = "DELETE FROM Tables WHERE TableID = @TableID";
+                        SqlCommand cmd = new SqlCommand(query, clsDatabase.con);
+                        cmd.Parameters.AddWithValue("@TableID", tableID);
+                        cmd.ExecuteNonQuery();
+                        clsDatabase.CloseConnection();
+                        BindData();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Response.Write("Lỗi khi xóa bàn: " + ex.Message);
                 }
             }
-            catch (Exception ex)
-            {
-                Response.Write("Lỗi khi cập nhật trạng thái: " + ex.Message);
-            }
         }
 
-        private void DeleteTable(int tableID)
-        {
-            try
-            {
-                if (clsDatabase.OpenConnection())
-                {
-                    string query = "DELETE FROM Tables WHERE TableID = @TableID";
-                    SqlCommand cmd = new SqlCommand(query, clsDatabase.con);
-                    cmd.Parameters.AddWithValue("@TableID", tableID);
-                    cmd.ExecuteNonQuery();
-                    clsDatabase.CloseConnection();
-                    BindData();
-                }
-            }
-            catch (Exception ex)
-            {
-                Response.Write("Lỗi khi xóa bàn: " + ex.Message);
-            }
-        }
-
-        // Xử lý chuyển trang
         protected void btnPrevious_Click(object sender, EventArgs e)
         {
             _currentPage--;
@@ -247,6 +227,7 @@ namespace WebAplication1
             _currentPage++;
             BindData();
         }
+        
         protected void btnFilter_Click(object sender, EventArgs e)
         {
             _currentPage = 0;
@@ -260,6 +241,7 @@ namespace WebAplication1
             _currentPage = 0;
             BindData();
         }
+        
         protected void btnAddTable_Click(object sender, EventArgs e)
         {
             try
@@ -274,7 +256,7 @@ namespace WebAplication1
                         cmd.Parameters.AddWithValue("@Seats", seats);
                         cmd.ExecuteNonQuery();
                         clsDatabase.CloseConnection();
-                        txtSeats.Text = ""; // Reset ô nhập
+                        txtSeats.Text = ""; 
                         BindData();
                     }
                     else
@@ -288,48 +270,6 @@ namespace WebAplication1
                 Response.Write("Lỗi khi thêm bàn: " + ex.Message);
             }
         }
-
-        // Khi bấm Edit
-        protected void GridView1_RowEditing(object sender, GridViewEditEventArgs e)
-        {
-            GridView1.EditIndex = e.NewEditIndex; // Đặt dòng đang chỉnh sửa
-            BindData(); // Cập nhật lại GridView
-        }
-
-        // Khi bấm Update
-        protected void GridView1_RowUpdating(object sender, GridViewUpdateEventArgs e)
-        {
-            int tableID = Convert.ToInt32(GridView1.DataKeys[e.RowIndex].Value);
-            TextBox txtSeats = (TextBox)GridView1.Rows[e.RowIndex].Cells[1].Controls[0];
-
-            try
-            {
-                if (clsDatabase.OpenConnection())
-                {
-                    string query = "UPDATE Tables SET Seats = @Seats WHERE TableID = @TableID";
-                    SqlCommand cmd = new SqlCommand(query, clsDatabase.con);
-                    cmd.Parameters.AddWithValue("@Seats", txtSeats.Text.Trim());
-                    cmd.Parameters.AddWithValue("@TableID", tableID);
-                    cmd.ExecuteNonQuery();
-                    clsDatabase.CloseConnection();
-                }
-            }
-            catch (Exception ex)
-            {
-                Response.Write("Lỗi khi cập nhật: " + ex.Message);
-            }
-
-            GridView1.EditIndex = -1; // Thoát chế độ chỉnh sửa
-            BindData(); // Load lại dữ liệu
-        }
-
-        // Khi bấm Cancel
-        protected void GridView1_RowCancelingEdit(object sender, GridViewCancelEditEventArgs e)
-        {
-            GridView1.EditIndex = -1; // Hủy chỉnh sửa
-            BindData(); // Load lại dữ liệu
-        }
-
 
     }
 }

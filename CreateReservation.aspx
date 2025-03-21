@@ -52,23 +52,23 @@
 </head>
 <body>
     <div class="container">
-        <h2>Tạo đặt bàn mới</h2>
+        <h2>Create new reservation</h2>
         <form id="form1" runat="server">
             <div class="form-group">
-                <label for="ddlUsername">Chọn Username</label>
+                <label for="ddlUsername">Username</label>
                 <asp:DropDownList ID="ddlUsername" runat="server"></asp:DropDownList>
             </div>
             <div class="form-group">
-                <label for="ddlTableID">Chọn Table ID</label>
+                <label for="ddlTableID">Table ID</label>
                 <asp:DropDownList ID="ddlTableID" runat="server"></asp:DropDownList>
             </div>
             <div class="form-group">
-                <label for="txtDateTime">Thời gian đến</label>
+                <label for="txtDateTime">Arrive Time</label>
                 <asp:TextBox ID="txtDateTime" runat="server" TextMode="DateTimeLocal"></asp:TextBox>
             </div>
             <div class="form-group">
-                <asp:Button ID="btnSubmit" runat="server" CssClass="btn btn-submit" Text="Tạo đặt bàn" OnClick="btnSubmit_Click" />
-                <asp:Button ID="btnCancel" runat="server" CssClass="btn btn-cancel" Text="Hủy" OnClick="btnCancel_Click" />
+                <asp:Button ID="btnSubmit" runat="server" CssClass="btn btn-submit" Text="Create" OnClick="btnSubmit_Click" />
+                <asp:Button ID="btnCancel" runat="server" CssClass="btn btn-cancel" Text="Cancel" OnClick="btnCancel_Click" />
             </div>
         </form>
     </div>

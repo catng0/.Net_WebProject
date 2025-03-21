@@ -113,19 +113,18 @@ namespace WebAplication1
 
         protected void btnFilter_Click(object sender, EventArgs e)
         {
-            _currentPage = 0; // Reset về trang đầu tiên khi áp dụng bộ lọc
+            _currentPage = 0; 
             BindData();
         }
 
         protected void btnCancelFilter_Click(object sender, EventArgs e)
         {
-            // Reset các trường lọc về giá trị mặc định
             txtUsername.Text = "";
             txtDate.Text = "";
             txtTime.Text = "";
             txtTableID.Text = "";
 
-            _currentPage = 0; // Reset về trang đầu tiên
+            _currentPage = 0; 
             BindData();
         }
 
@@ -195,17 +194,44 @@ namespace WebAplication1
                 GridViewReservations.EditIndex = -1; // Thoát chế độ chỉnh sửa
                 BindData();
             }
-
-
-
             else if (e.CommandName == "CancelReservation")
             {
-                GridViewReservations.EditIndex = -1; // Hủy chỉnh sửa
+                GridViewReservations.EditIndex = -1; 
                 BindData();
             }
             else if (e.CommandName == "DeleteReservation")
             {
-                DeleteReservation(reservationID);
+                try
+                {
+                    clsDatabase.OpenConnection();
+                    string query = "DELETE FROM Reservation WHERE ReservationID = @ReservationID";
+                    SqlCommand cmd = new SqlCommand(query, clsDatabase.con);
+                    cmd.Parameters.AddWithValue("@ReservationID", reservationID);
+                    cmd.ExecuteNonQuery();
+                    clsDatabase.CloseConnection();
+                    BindData();
+                }
+                catch (Exception ex)
+                {
+                    Response.Write("Lỗi khi xóa đặt bàn: " + ex.Message);
+                }
+            }
+            else if (e.CommandName == "ChangeStatus")
+            {
+                try
+                {
+                    clsDatabase.OpenConnection();
+                    string query = "UPDATE Reservation SET Status = CASE \r\n    WHEN Status = 0 THEN 1 \r\n    ELSE 0 \r\nEND  WHERE ReservationID = @ReservationID";
+                    SqlCommand cmd = new SqlCommand(query, clsDatabase.con);
+                    cmd.Parameters.AddWithValue("@ReservationID", reservationID);
+                    cmd.ExecuteNonQuery();
+                    clsDatabase.CloseConnection();
+                    BindData();
+                }
+                catch (Exception ex)
+                {
+                    Response.Write("Lỗi khi cập nhật trạng thái: " + ex.Message);
+                }
             }
         }
         protected void GridViewReservations_RowDataBound(object sender, GridViewRowEventArgs e)
@@ -216,23 +242,19 @@ namespace WebAplication1
                 {
                     DropDownList ddlUsername = (DropDownList)e.Row.FindControl("ddlUsername");
                     DropDownList ddlTableID = (DropDownList)e.Row.FindControl("ddlTableID");
-                    DropDownList ddlStatus = (DropDownList)e.Row.FindControl("ddlStatus");
                     TextBox txtDateTime = (TextBox)e.Row.FindControl("txtDateTime");
 
                     DataRowView rowView = (DataRowView)e.Row.DataItem;
-                    string currentUserID = rowView["UserID"].ToString();  // Đảm bảo lấy được UserID
+                    string currentUserID = rowView["UserID"].ToString(); 
                     string currentTableID = rowView["TableID"].ToString();
-                    bool currentStatus = Convert.ToBoolean(rowView["Status"]);
                     DateTime currentDateTime = Convert.ToDateTime(rowView["DateTime"]);
 
                     if (ddlUsername != null)
                     {
-                        ddlUsername.DataSource = GetUsers();  // Phải trả về cả UserID và Username
-                        ddlUsername.DataTextField = "Username";  // Hiển thị Username
-                        ddlUsername.DataValueField = "UserID";  // Lưu giá trị theo UserID
+                        ddlUsername.DataSource = GetUsers();  
+                        ddlUsername.DataTextField = "Username";  
+                        ddlUsername.DataValueField = "UserID";  
                         ddlUsername.DataBind();
-
-                        // Chọn UserID hiện tại
                         ddlUsername.SelectedValue = currentUserID;
                     }
 
@@ -244,21 +266,10 @@ namespace WebAplication1
                         ddlTableID.DataBind();
                         ddlTableID.SelectedValue = currentTableID;
                     }
-                    if (ddlStatus != null)
-                    {
-                        // Clear items trước để tránh lỗi duplicate
-                        ddlStatus.Items.Clear();
-                        ddlStatus.Items.Add(new ListItem("Waiting", "0"));
-                        ddlStatus.Items.Add(new ListItem("Completed", "1"));
-                        ddlStatus.DataBind();
-
-                        // Set giá trị tương ứng
-                        ddlStatus.SelectedValue = currentStatus ? "1" : "0";
-                    }
 
                     if (txtDateTime != null)
                     {
-                        txtDateTime.Text = currentDateTime.ToString("yyyy-MM-ddTHH:mm"); // Format chuẩn HTML datetime-local
+                        txtDateTime.Text = currentDateTime.ToString("yyyy-MM-ddTHH:mm"); 
                     }
                 }
             }
@@ -268,31 +279,9 @@ namespace WebAplication1
             }
         }
 
-
         protected void btnNewReservation_Click(object sender, EventArgs e)
         {
             Response.Redirect("CreateReservation.aspx");
-        }
-
-        private void DeleteReservation(int reservationID)
-        {
-            try
-            {
-                if (clsDatabase.OpenConnection())
-                {
-                    // Xóa đặt bàn
-                    string query = "DELETE FROM Reservation WHERE ReservationID = @ReservationID";
-                    SqlCommand cmd = new SqlCommand(query, clsDatabase.con);
-                    cmd.Parameters.AddWithValue("@ReservationID", reservationID);
-                    cmd.ExecuteNonQuery();
-                    clsDatabase.CloseConnection();
-                    BindData();
-                }
-            }
-            catch (Exception ex)
-            {
-                Response.Write("Lỗi khi xóa đặt bàn: " + ex.Message);
-            }
         }
 
         protected void btnPrevious_Click(object sender, EventArgs e)

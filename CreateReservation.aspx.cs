@@ -27,8 +27,8 @@ namespace WebAplication1
                     SqlDataReader reader = cmd.ExecuteReader();
 
                     ddlUsername.DataSource = reader;
-                    ddlUsername.DataTextField = "Username";  // Hiển thị Username
-                    ddlUsername.DataValueField = "UserID";   // Lưu UserID
+                    ddlUsername.DataTextField = "Username"; 
+                    ddlUsername.DataValueField = "UserID"; 
                     ddlUsername.DataBind();
 
                     reader.Close();
@@ -72,8 +72,7 @@ namespace WebAplication1
             {
                 if (clsDatabase.OpenConnection())
                 {
-                    // Lấy thông tin từ form
-                    int userID = Convert.ToInt32(ddlUsername.SelectedValue);
+                   int userID = Convert.ToInt32(ddlUsername.SelectedValue);
                     int tableID = Convert.ToInt32(ddlTableID.SelectedValue);
 
                     DateTime dateTime;
@@ -83,7 +82,6 @@ namespace WebAplication1
                         return;
                     }
 
-                    // Thêm đặt bàn mới vào database với Status mặc định = 0
                     string query = "INSERT INTO Reservation (UserID, TableID, DateTime, Status) VALUES (@UserID, @TableID, @DateTime, 0)";
                     SqlCommand cmd = new SqlCommand(query, clsDatabase.con);
                     cmd.Parameters.AddWithValue("@UserID", userID);
@@ -92,7 +90,6 @@ namespace WebAplication1
                     cmd.ExecuteNonQuery();
                     clsDatabase.CloseConnection();
 
-                    // Chuyển hướng về trang quản lý đặt bàn
                     Response.Redirect("Reservation.aspx");
                 }
             }
@@ -104,7 +101,6 @@ namespace WebAplication1
 
         protected void btnCancel_Click(object sender, EventArgs e)
         {
-            // Chuyển hướng về trang quản lý đặt bàn
             Response.Redirect("Reservation.aspx");
         }
     }
