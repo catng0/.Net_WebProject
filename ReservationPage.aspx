@@ -96,13 +96,19 @@
         <asp:Button ID="btnReserve" runat="server" Text="Đặt Bàn" CssClass="aspButton" OnClick="btnReserve_Click" />
 
         <h3>Danh sách đặt bàn của bạn</h3>
-        <asp:GridView ID="GridViewReservations" runat="server" AutoGenerateColumns="False">
-            <Columns>
-                <asp:BoundField DataField="ReservationID" HeaderText="ID" />
-                <asp:BoundField DataField="TableID" HeaderText="Bàn" />
-                <asp:BoundField DataField="DateTime" HeaderText="Thời gian" DataFormatString="{0:yyyy-MM-dd HH:mm}" />
-            </Columns>
-        </asp:GridView>
+        <asp:GridView ID="GridViewReservations" runat="server" AutoGenerateColumns="False" OnRowCommand="GridViewReservations_RowCommand">
+    <Columns>
+        <asp:BoundField DataField="ReservationID" HeaderText="ID" />
+        <asp:BoundField DataField="TableID" HeaderText="Bàn" />
+        <asp:BoundField DataField="DateTime" HeaderText="Thời gian" DataFormatString="{0:yyyy-MM-dd HH:mm}" />
+        <asp:TemplateField HeaderText="Hủy">
+            <ItemTemplate>
+                <asp:Button ID="btnCancel" runat="server" Text="Hủy" CssClass="aspButton" CommandName="CancelReservation" CommandArgument='<%# Eval("ReservationID") %>' OnClientClick="return confirm('Bạn có chắc muốn hủy đặt bàn này?');" />
+            </ItemTemplate>
+        </asp:TemplateField>
+    </Columns>
+</asp:GridView>
+
     </form>
 </body>
 </html>

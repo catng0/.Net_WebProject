@@ -100,20 +100,13 @@
             <p>LOG IN HERE TO ENTER THE FOOD PARADISE</p>
 
             <!-- Username field với icon -->
-            <div class="input-container">
-                <i class="fas fa-user"></i>
-                <input id="username" type="text" placeholder="Username" />
-            </div>
+            <asp:TextBox ID="txtUsername" runat="server" placeholder="Username" CssClass="asp-input"></asp:TextBox>
+            <asp:TextBox ID="txtPassword" runat="server" TextMode="Password" placeholder="Password" CssClass="asp-input"></asp:TextBox>
 
-            <!-- Password field với icon -->
-            <div class="input-container">
-                <i class="fas fa-lock"></i>
-                <input id="password" type="password" placeholder="Password" />
-            </div>
 
             <!-- Nút bấm -->
             <div class="button-container">
-                <asp:Button ID="Button1" runat="server" Text="OKE" CssClass="aspButton" />
+                <asp:Button ID="ButtonSignIn" runat="server" Text="OKE" CssClass="aspButton" OnClick="ButtonSignIn_Click" />
                 <asp:Button ID="Button3" runat="server" Text="REGISTER" CssClass="aspButton" />
                 <asp:Button ID="Button4" runat="server" Text="CANCEL" CssClass="aspButton" />
             </div>

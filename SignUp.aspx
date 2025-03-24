@@ -92,22 +92,22 @@
 
         <!-- Username field với icon -->
         <div class="input-container">
-            <i class="fas fa-user"></i>
-            <input id="Text1" type="text" placeholder="Username" required />
-        </div>
+    <i class="fas fa-user"></i>
+    <asp:TextBox ID="txtUsername" runat="server" placeholder="Username" CssClass="asp-input"></asp:TextBox>
+</div>
 
-        <!-- Password field với icon -->
-        <div class="input-container">
-            <i class="fas fa-lock"></i>
-            <input id="Text2" type="password" placeholder="Password" required />
-        </div>
+<div class="input-container">
+    <i class="fas fa-lock"></i>
+    <asp:TextBox ID="txtPassword" runat="server" TextMode="Password" placeholder="Password" CssClass="asp-input"></asp:TextBox>
+</div>
 
         <!-- Nút bấm -->
-        <div class="button-container">
-            <asp:Button ID="Button1" runat="server" Text="SIGN UP" CssClass="aspButton" />
-            <asp:Button ID="Button2" runat="server" Text="LOG IN" CssClass="aspButton" />
-            <asp:Button ID="Button3" runat="server" Text="CANCEL" CssClass="aspButton" />
-        </div>
+       <div class="button-container">
+    <asp:Button ID="Button1" runat="server" Text="SIGN UP" CssClass="aspButton" OnClick="Button1_Click" />
+    <asp:Button ID="Button2" runat="server" Text="LOG IN" CssClass="aspButton" />
+    <asp:Button ID="Button3" runat="server" Text="CANCEL" CssClass="aspButton"  />
+</div>
+
     </form>
 </body>
 
