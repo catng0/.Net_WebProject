@@ -126,9 +126,7 @@
                     <ItemTemplate>
                         
                         <asp:Button ID="btnRemove" runat="server" Text="-" CommandArgument='<%# Eval("ItemID") %>' OnClick="btnRemoveItem_Click" />
-                        <asp:Button ID="btnCreateOrder" runat="server" Text="TẠO ĐƠN" CssClass="btn-toggle-order" OnClick="btnCreateOrder_Click" />
-<asp:Button ID="btnCancelOrder" runat="server" Text="HỦY ĐƠN" CssClass="btn-toggle-order" OnClick="btnCancelOrder_Click" />
-
+                        
                     </ItemTemplate>
 
                 </asp:TemplateField>
@@ -139,7 +137,10 @@
         <div class="total-price">
             Total Price: <asp:Label ID="lblTotalPrice" runat="server" Text="0" />
         </div>
-
+        
+        <asp:Button ID="btnCreateOrder" runat="server" Text="TẠO ĐƠN" OnClick="btnCreateOrder_Click" CssClass="btn-action" />
+        <asp:Button ID="btnCancelOrder" runat="server" Text="HỦY ĐƠN" OnClick="btnCancelOrder_Click" CssClass="btn-action" />
+        
         <asp:Button ID="btnViewInvoice" runat="server" Text="CHECK INVOICE" OnClick="btnViewInvoice_Click" CssClass="btn-toggle-order" />
 
         <asp:GridView ID="GridViewInvoice" runat="server" CssClass="gridview-style" Visible="false" AutoGenerateColumns="True">

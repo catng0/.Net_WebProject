@@ -8,7 +8,7 @@ namespace WebApplication1
 {
     public partial class OrderDetails : System.Web.UI.Page
     {
-        string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["restaurantConnectionString"].ToString();
+        connectionString = clsDatabase.OpenConnection()
 
         protected void Page_Load(object sender, EventArgs e)
         {
