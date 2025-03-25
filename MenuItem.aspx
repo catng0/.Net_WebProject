@@ -130,7 +130,7 @@
 
                     </div>
                     <div class="text-center mt-3">
-                        <asp:Button ID="btnAdd" runat="server" Text="Thêm sản phẩm" CssClass="btn btn-add" OnClick="btnAdd_Click" />
+                        <asp:Button ID="btnAdd" runat="server" Text="Thêm sản phẩm" CssClass="btn btn-add"  />
                     </div>
                 </div>
                 

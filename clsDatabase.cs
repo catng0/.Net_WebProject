@@ -15,7 +15,7 @@ namespace WebApplication1
         {
             try
             {
-                con = new SqlConnection("Server=LAPTOP-8L7Q69M8\\KIEUHOA; Database=restaurant; Integrated Security=True;");
+                con = new SqlConnection("Server=THANHDAT\\MSSQLSERVER02; Database=restaurant; Integrated Security=True;");
                 con.Open();
             }
             catch (Exception ex)

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Configuration;
 using System.Data.SqlClient;
 using System.Web.UI;
 
@@ -20,28 +19,30 @@ namespace WebApplication1
                 {
                     Response.Redirect("MenuItem.aspx");
                 }
-
-
             }
         }
 
         private void LoadItemDetails(string itemId)
         {
-            string query = "SELECT * FROM MenuItems WHERE ItemID = @ItemID";
-            using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["restaurantConnectionString"].ConnectionString))
+            try
             {
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+                if (!clsDatabase.OpenConnection())
+                {
+                    ShowAlert("Không thể kết nối cơ sở dữ liệu!");
+                    return;
+                }
+
+                string query = "SELECT * FROM MenuItems WHERE ItemID = @ItemID";
+                using (SqlCommand cmd = new SqlCommand(query, clsDatabase.con))
                 {
                     cmd.Parameters.AddWithValue("@ItemID", itemId);
-                    conn.Open();
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
                         if (reader.Read())
                         {
                             txtName.Text = reader["Name"].ToString();
                             decimal price = Convert.ToDecimal(reader["Price"]);
-                            txtPrice.Text = price.ToString("N0"); // Giữ nguyên giá trị, chỉ bỏ ,00
-                            txtPrice.Text = ((int)price).ToString("N0");
+                            txtPrice.Text = ((int)price).ToString("N0"); // Giữ nguyên giá trị, chỉ bỏ ,00
                             txtDescription.Text = reader["Description"].ToString();
                             txtCategory.Text = reader["Category"].ToString();
                             txtType.Text = reader["Type"].ToString();
@@ -49,15 +50,9 @@ namespace WebApplication1
                             if (reader["Image"] != DBNull.Value)
                             {
                                 byte[] imageData = (byte[])reader["Image"];
-                                if (imageData.Length > 0)
-                                {
-                                    string base64String = Convert.ToBase64String(imageData);
-                                    imgFood.ImageUrl = $"data:image/png;base64,{base64String}";
-                                }
-                                else
-                                {
-                                    imgFood.ImageUrl = "https://via.placeholder.com/300";
-                                }
+                                imgFood.ImageUrl = imageData.Length > 0
+                                    ? $"data:image/png;base64,{Convert.ToBase64String(imageData)}"
+                                    : "https://via.placeholder.com/300";
                             }
                             else
                             {
@@ -66,6 +61,14 @@ namespace WebApplication1
                         }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                ShowAlert("Lỗi khi tải thông tin món ăn: " + ex.Message);
+            }
+            finally
+            {
+                clsDatabase.CloseConnection();
             }
         }
 
@@ -80,48 +83,63 @@ namespace WebApplication1
 
             try
             {
-                using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["restaurantConnectionString"].ConnectionString))
+                if (!clsDatabase.OpenConnection())
                 {
-                    conn.Open();
-                    string query;
-                    SqlCommand cmd;
+                    ShowAlert("Không thể kết nối cơ sở dữ liệu!");
+                    return;
+                }
 
-                    // Nếu có hình ảnh mới, cập nhật toàn bộ
-                    if (fileUploadImage.HasFile)
-                    {
-                        query = "UPDATE MenuItems SET Name = @Name, Price = @Price, Description = @Description, Category = @Category, Type = @Type, Image = @Image WHERE ItemID = @ItemID";
-                        cmd = new SqlCommand(query, conn);
-                        cmd.Parameters.AddWithValue("@Image", fileUploadImage.FileBytes);
-                    }
-                    else // Nếu không có hình ảnh mới, chỉ cập nhật các trường khác
-                    {
-                        query = "UPDATE MenuItems SET Name = @Name, Price = @Price, Description = @Description, Category = @Category, Type = @Type WHERE ItemID = @ItemID";
-                        cmd = new SqlCommand(query, conn);
-                    }
+                string query;
+                SqlCommand cmd;
 
-                    cmd.Parameters.AddWithValue("@ItemID", itemId);
-                    cmd.Parameters.AddWithValue("@Name", txtName.Text);
-                    cmd.Parameters.AddWithValue("@Price", txtPrice.Text.Replace(".", ""));
+                // Nếu có hình ảnh mới, cập nhật toàn bộ
+                if (fileUploadImage.HasFile)
+                {
+                    query = "UPDATE MenuItems SET Name = @Name, Price = @Price, Description = @Description, Category = @Category, Type = @Type, Image = @Image WHERE ItemID = @ItemID";
+                    cmd = new SqlCommand(query, clsDatabase.con);
+                    cmd.Parameters.AddWithValue("@Image", fileUploadImage.FileBytes);
+                }
+                else // Nếu không có hình ảnh mới, chỉ cập nhật các trường khác
+                {
+                    query = "UPDATE MenuItems SET Name = @Name, Price = @Price, Description = @Description, Category = @Category, Type = @Type WHERE ItemID = @ItemID";
+                    cmd = new SqlCommand(query, clsDatabase.con);
+                }
 
-                    cmd.Parameters.AddWithValue("@Description", txtDescription.Text);
-                    cmd.Parameters.AddWithValue("@Category", txtCategory.Text);
-                    cmd.Parameters.AddWithValue("@Type", txtType.Text);
+                cmd.Parameters.AddWithValue("@ItemID", itemId);
+                cmd.Parameters.AddWithValue("@Name", txtName.Text);
+                cmd.Parameters.AddWithValue("@Price", txtPrice.Text.Replace(".", ""));
+                cmd.Parameters.AddWithValue("@Description", txtDescription.Text);
+                cmd.Parameters.AddWithValue("@Category", txtCategory.Text);
+                cmd.Parameters.AddWithValue("@Type", txtType.Text);
 
-                    int rowsAffected = cmd.ExecuteNonQuery();
-                    if (rowsAffected > 0)
-                    {
-                        Response.Write("<script>alert('Cập nhật sản phẩm thành công!'); window.location='MenuItem.aspx';</script>");
-                    }
-                    else
-                    {
-                        Response.Write("<script>alert('Lỗi khi cập nhật sản phẩm!');</script>");
-                    }
+                int rowsAffected = cmd.ExecuteNonQuery();
+                if (rowsAffected > 0)
+                {
+                    ShowAlertAndRedirect("Cập nhật sản phẩm thành công!", "MenuItem.aspx");
+                }
+                else
+                {
+                    ShowAlert("Lỗi khi cập nhật sản phẩm!");
                 }
             }
             catch (Exception ex)
             {
-                Response.Write("<script>alert('Lỗi: " + ex.Message + "');</script>");
+                ShowAlert("Lỗi: " + ex.Message);
             }
+            finally
+            {
+                clsDatabase.CloseConnection();
+            }
+        }
+
+        private void ShowAlert(string message)
+        {
+            ScriptManager.RegisterStartupScript(this, this.GetType(), "alert", $"alert('{message}');", true);
+        }
+
+        private void ShowAlertAndRedirect(string message, string url)
+        {
+            ScriptManager.RegisterStartupScript(this, this.GetType(), "alertRedirect", $"alert('{message}'); window.location='{url}';", true);
         }
     }
 }
