@@ -27,8 +27,8 @@ namespace WebAplication1
                     SqlDataReader reader = cmd.ExecuteReader();
 
                     ddlUsername.DataSource = reader;
-                    ddlUsername.DataTextField = "Username"; 
-                    ddlUsername.DataValueField = "UserID"; 
+                    ddlUsername.DataTextField = "Username";
+                    ddlUsername.DataValueField = "UserID";
                     ddlUsername.DataBind();
 
                     reader.Close();
@@ -72,7 +72,7 @@ namespace WebAplication1
             {
                 if (clsDatabase.OpenConnection())
                 {
-                   int userID = Convert.ToInt32(ddlUsername.SelectedValue);
+                    int userID = Convert.ToInt32(ddlUsername.SelectedValue);
                     int tableID = Convert.ToInt32(ddlTableID.SelectedValue);
 
                     DateTime dateTime;
