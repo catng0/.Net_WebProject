@@ -16,6 +16,7 @@ namespace WebApplication1
             {
                 LoadMenuItems();
                 LoadOrderDetails();
+                GridView2.Visible = false;
             }
         }
 
@@ -34,21 +35,30 @@ namespace WebApplication1
 
         private void LoadOrderDetails()
         {
-            int userID = 1;  // Giả định UserID = 1 (có thể lấy từ session)
-            string query = "SELECT mi.Name, od.Quantity, mi.Price FROM OrderDetails od " +
-                           "JOIN MenuItems mi ON od.ItemID = mi.ItemID WHERE od.UserID = @UserID";
+            int userID = 1; // Giả định lấy từ session
+            int orderID = GetOrderID(userID);
+
+            if (orderID == -1)
+            {
+                lblTotalPrice.Text = "0";
+                GridView2.DataSource = null;
+                GridView2.DataBind();
+                return;
+            }
+
+            string query = "SELECT mi.Name, od.Quantity, od.Price, od.ItemID FROM OrderDetails od " +
+                           "JOIN MenuItems mi ON od.ItemID = mi.ItemID WHERE od.OrderID = @OrderID";
 
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@UserID", userID);
+                cmd.Parameters.AddWithValue("@OrderID", orderID);
                 SqlDataAdapter da = new SqlDataAdapter(cmd);
                 DataTable dt = new DataTable();
                 da.Fill(dt);
                 GridView2.DataSource = dt;
                 GridView2.DataBind();
 
-                // Tính tổng tiền
                 decimal total = 0;
                 foreach (DataRow row in dt.Rows)
                 {
@@ -58,44 +68,200 @@ namespace WebApplication1
             }
         }
 
+        private int GetOrderID(int userID)
+        {
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                conn.Open();
+                string query = "SELECT OrderID FROM Orders WHERE UserID = @UserID AND Status = 'Pending'";
+                SqlCommand cmd = new SqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@UserID", userID);
+                object result = cmd.ExecuteScalar();
+                return result != null ? Convert.ToInt32(result) : -1;
+            }
+        }
+
         protected void btnAddItem_Click(object sender, EventArgs e)
         {
             Button btn = (Button)sender;
             int itemID = Convert.ToInt32(btn.CommandArgument);
-            int userID = 1;  // Giả định UserID = 1 (có thể lấy từ session)
+            int userID = 1; // Giả định UserID lấy từ session
+            int orderID = GetOrderID(userID);
+
+            if (orderID == -1)
+            {
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    conn.Open();
+                    string createOrderQuery = "INSERT INTO Orders (UserID, Status) OUTPUT INSERTED.OrderID VALUES (@UserID, 'Pending')";
+                    SqlCommand createOrderCmd = new SqlCommand(createOrderQuery, conn);
+                    createOrderCmd.Parameters.AddWithValue("@UserID", userID);
+                    orderID = (int)createOrderCmd.ExecuteScalar();
+                }
+            }
 
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 conn.Open();
-
-                // Kiểm tra nếu món đã có trong OrderDetails
-                string checkQuery = "SELECT COUNT(*) FROM OrderDetails WHERE UserID = @UserID AND ItemID = @ItemID";
+                string checkQuery = "SELECT COUNT(*) FROM OrderDetails WHERE OrderID = @OrderID AND ItemID = @ItemID";
                 SqlCommand checkCmd = new SqlCommand(checkQuery, conn);
-                checkCmd.Parameters.AddWithValue("@UserID", userID);
+                checkCmd.Parameters.AddWithValue("@OrderID", orderID);
                 checkCmd.Parameters.AddWithValue("@ItemID", itemID);
-
                 int count = (int)checkCmd.ExecuteScalar();
+
                 if (count > 0)
                 {
-                    // Nếu đã có, cập nhật số lượng
-                    string updateQuery = "UPDATE OrderDetails SET Quantity = Quantity + 1 WHERE UserID = @UserID AND ItemID = @ItemID";
+                    string updateQuery = "UPDATE OrderDetails SET Quantity = Quantity + 1 WHERE OrderID = @OrderID AND ItemID = @ItemID";
                     SqlCommand updateCmd = new SqlCommand(updateQuery, conn);
-                    updateCmd.Parameters.AddWithValue("@UserID", userID);
+                    updateCmd.Parameters.AddWithValue("@OrderID", orderID);
                     updateCmd.Parameters.AddWithValue("@ItemID", itemID);
                     updateCmd.ExecuteNonQuery();
                 }
                 else
                 {
-                    // Nếu chưa có, thêm mới
-                    string insertQuery = "INSERT INTO OrderDetails (UserID, ItemID, Quantity) VALUES (@UserID, @ItemID, 1)";
+                    string insertQuery = "INSERT INTO OrderDetails (OrderID, ItemID, Quantity, Price) VALUES (@OrderID, @ItemID, 1, (SELECT Price FROM MenuItems WHERE ItemID = @ItemID))";
                     SqlCommand insertCmd = new SqlCommand(insertQuery, conn);
-                    insertCmd.Parameters.AddWithValue("@UserID", userID);
+                    insertCmd.Parameters.AddWithValue("@OrderID", orderID);
                     insertCmd.Parameters.AddWithValue("@ItemID", itemID);
                     insertCmd.ExecuteNonQuery();
                 }
             }
+            LoadOrderDetails();
+        }
+
+        protected void btnRemoveItem_Click(object sender, EventArgs e)
+        {
+            Button btn = (Button)sender;
+            int itemID = Convert.ToInt32(btn.CommandArgument);
+            int userID = 1; // Giả định UserID lấy từ session
+            int orderID = GetOrderID(userID);
+
+            if (orderID == -1)
+            {
+                return;
+            }
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                conn.Open();
+                string query = "UPDATE OrderDetails SET Quantity = Quantity - 1 WHERE OrderID = @OrderID AND ItemID = @ItemID";
+                SqlCommand cmd = new SqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@OrderID", orderID);
+                cmd.Parameters.AddWithValue("@ItemID", itemID);
+                cmd.ExecuteNonQuery();
+
+                string deleteQuery = "DELETE FROM OrderDetails WHERE OrderID = @OrderID AND ItemID = @ItemID AND Quantity <= 0";
+                SqlCommand deleteCmd = new SqlCommand(deleteQuery, conn);
+                deleteCmd.Parameters.AddWithValue("@OrderID", orderID);
+                deleteCmd.Parameters.AddWithValue("@ItemID", itemID);
+                deleteCmd.ExecuteNonQuery();
+            }
 
             LoadOrderDetails();
         }
+
+        protected void btnToggleOrder_Click(object sender, EventArgs e)
+        {
+            GridView2.Visible = !GridView2.Visible;
+
+            if (GridView2.Visible)
+            {
+                LoadOrderDetails();
+            }
+        }
+
+        protected void btnViewInvoice_Click(object sender, EventArgs e)
+        {
+            int userID = 1; // Giả định UserID lấy từ session
+            int orderID = GetOrderID(userID);
+
+            if (orderID != -1)
+            {
+                // Kiểm tra trạng thái hiển thị của bảng GridViewInvoice
+                GridViewInvoice.Visible = !GridViewInvoice.Visible;
+
+                if (GridViewInvoice.Visible)
+                {
+                    LoadInvoiceDetails(orderID);
+                }
+            }
+        }
+
+
+
+        private void LoadInvoiceDetails(int orderID)
+        {
+            string query = "SELECT o.OrderID, o.OrderTime, mi.Name AS ItemName, od.Quantity, od.Price, (od.Quantity * od.Price) AS TotalPrice " +
+                           "FROM Orders o " +
+                           "JOIN OrderDetails od ON o.OrderID = od.OrderID " +
+                           "JOIN MenuItems mi ON od.ItemID = mi.ItemID " +
+                           "WHERE o.OrderID = @OrderID";
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                SqlCommand cmd = new SqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@OrderID", orderID);
+                SqlDataAdapter da = new SqlDataAdapter(cmd);
+                DataTable dt = new DataTable();
+                da.Fill(dt);
+                GridViewInvoice.DataSource = dt;
+                GridViewInvoice.DataBind();
+            }
+        }
+        protected void btnCreateOrder_Click(object sender, EventArgs e)
+        {
+            int userID = 1; // Giả định UserID lấy từ session
+            int orderID = GetOrderID(userID);
+
+            if (orderID == -1)
+            {
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    conn.Open();
+                    string createOrderQuery = "INSERT INTO Orders (UserID, Status, TotalPrice) OUTPUT INSERTED.OrderID VALUES (@UserID, 'Pending', 0)";
+                    SqlCommand cmd = new SqlCommand(createOrderQuery, conn);
+                    cmd.Parameters.AddWithValue("@UserID", userID);
+                    orderID = (int)cmd.ExecuteScalar();
+                }
+
+                LoadOrderDetails();
+                Response.Write("<script>alert('Đơn hàng mới đã được tạo!');</script>");
+            }
+            else
+            {
+                Response.Write("<script>alert('Bạn đã có đơn hàng chưa hoàn tất!');</script>");
+            }
+        }
+
+        protected void btnCancelOrder_Click(object sender, EventArgs e)
+        {
+            int userID = 1; // Giả định UserID lấy từ session
+            int orderID = GetOrderID(userID);
+
+            if (orderID != -1)
+            {
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    conn.Open();
+                    string deleteOrderDetailsQuery = "DELETE FROM OrderDetails WHERE OrderID = @OrderID";
+                    SqlCommand deleteOrderDetailsCmd = new SqlCommand(deleteOrderDetailsQuery, conn);
+                    deleteOrderDetailsCmd.Parameters.AddWithValue("@OrderID", orderID);
+                    deleteOrderDetailsCmd.ExecuteNonQuery();
+
+                    string deleteOrderQuery = "DELETE FROM Orders WHERE OrderID = @OrderID AND Status = 'Pending'";
+                    SqlCommand deleteOrderCmd = new SqlCommand(deleteOrderQuery, conn);
+                    deleteOrderCmd.Parameters.AddWithValue("@OrderID", orderID);
+                    deleteOrderCmd.ExecuteNonQuery();
+                }
+
+                LoadOrderDetails();
+                Response.Write("<script>alert('Đơn hàng đã được hủy!');</script>");
+            }
+            else
+            {
+                Response.Write("<script>alert('Không có đơn hàng nào để hủy!');</script>");
+            }
+        }
+
     }
 }
