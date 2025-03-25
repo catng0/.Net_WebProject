@@ -1,6 +1,4 @@
-﻿
-using System;
-using System.Configuration;
+﻿using System;
 using System.Data;
 using System.Data.SqlClient;
 using System.IO;
@@ -16,7 +14,7 @@ namespace WebApplication1
             if (!IsPostBack)
             {
                 LoadData();
-                BindGridView();
+                BindCategories();
             }
         }
 
@@ -31,19 +29,31 @@ namespace WebApplication1
 
         private void LoadData()
         {
-            string query = "SELECT * FROM MenuItems";
-            using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["restaurantConnectionString"].ConnectionString))
+            try
             {
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+                if (!clsDatabase.OpenConnection())
                 {
-                    using (SqlDataAdapter da = new SqlDataAdapter(cmd))
-                    {
-                        DataTable dt = new DataTable();
-                        da.Fill(dt);
-                        GridView1.DataSource = dt;
-                        GridView1.DataBind();
-                    }
+                    ShowAlert("Không thể kết nối cơ sở dữ liệu!");
+                    return;
                 }
+
+                string query = "SELECT * FROM MenuItems";
+                using (SqlCommand cmd = new SqlCommand(query, clsDatabase.con))
+                using (SqlDataAdapter da = new SqlDataAdapter(cmd))
+                {
+                    DataTable dt = new DataTable();
+                    da.Fill(dt);
+                    GridView1.DataSource = dt;
+                    GridView1.DataBind();
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowAlert("Lỗi tải dữ liệu: " + ex.Message);
+            }
+            finally
+            {
+                clsDatabase.CloseConnection();
             }
         }
 
@@ -59,15 +69,17 @@ namespace WebApplication1
                     {
                         int itemId = Convert.ToInt32(GridView1.DataKeys[index].Value);
 
-                        string query = "DELETE FROM MenuItems WHERE ItemID=@ItemID";
-                        using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["restaurantConnectionString"].ConnectionString))
+                        if (!clsDatabase.OpenConnection())
                         {
-                            using (SqlCommand cmd = new SqlCommand(query, conn))
-                            {
-                                cmd.Parameters.AddWithValue("@ItemID", itemId);
-                                conn.Open();
-                                cmd.ExecuteNonQuery();
-                            }
+                            ShowAlert("Không thể kết nối cơ sở dữ liệu!");
+                            return;
+                        }
+
+                        string query = "DELETE FROM MenuItems WHERE ItemID=@ItemID";
+                        using (SqlCommand cmd = new SqlCommand(query, clsDatabase.con))
+                        {
+                            cmd.Parameters.AddWithValue("@ItemID", itemId);
+                            cmd.ExecuteNonQuery();
                         }
 
                         LoadData();
@@ -82,25 +94,33 @@ namespace WebApplication1
                 {
                     ShowAlert("Lỗi khi xóa món ăn: " + ex.Message);
                 }
+                finally
+                {
+                    clsDatabase.CloseConnection();
+                }
             }
 
             if (e.CommandName == "ViewDetails")
             {
-                int index = Convert.ToInt32(e.CommandArgument);
-
-                if (GridView1.DataKeys[index] != null) // Kiểm tra DataKeys
+                try
                 {
-                    int itemId = Convert.ToInt32(GridView1.DataKeys[index].Value);
-                    string connectionString = ConfigurationManager.ConnectionStrings["restaurantConnectionString"].ConnectionString;
+                    int index = Convert.ToInt32(e.CommandArgument);
 
-                    using (SqlConnection conn = new SqlConnection(connectionString))
+                    if (GridView1.DataKeys[index] != null) // Kiểm tra DataKeys
                     {
+                        int itemId = Convert.ToInt32(GridView1.DataKeys[index].Value);
+
+                        if (!clsDatabase.OpenConnection())
+                        {
+                            ShowAlert("Không thể kết nối cơ sở dữ liệu!");
+                            return;
+                        }
+
                         string query = "SELECT Name, Price, Description, Category, Type, Image FROM MenuItems WHERE ItemID = @ItemID";
 
-                        using (SqlCommand cmd = new SqlCommand(query, conn))
+                        using (SqlCommand cmd = new SqlCommand(query, clsDatabase.con))
                         {
                             cmd.Parameters.Add("@ItemID", SqlDbType.Int).Value = itemId;
-                            conn.Open();
 
                             using (SqlDataReader reader = cmd.ExecuteReader())
                             {
@@ -123,18 +143,21 @@ namespace WebApplication1
                             }
                         }
                     }
+                    else
+                    {
+                        ShowAlert("Không thể xác định món ăn.");
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    ShowAlert("Không thể xác định món ăn.");
+                    ShowAlert("Lỗi khi tải chi tiết món ăn: " + ex.Message);
+                }
+                finally
+                {
+                    clsDatabase.CloseConnection();
                 }
             }
-
         }
-
-
-       
-
 
         protected void GridView1_RowEditing(object sender, GridViewEditEventArgs e)
         {
@@ -150,24 +173,28 @@ namespace WebApplication1
 
         protected void GridView1_RowUpdating(object sender, GridViewUpdateEventArgs e)
         {
-            // Lấy ID của dòng cần cập nhật
-            int ItemID = Convert.ToInt32(GridView1.DataKeys[e.RowIndex].Value);
-
-            // Lấy dữ liệu từ ô nhập
-            GridViewRow row = GridView1.Rows[e.RowIndex];
-            string name = ((TextBox)row.Cells[1].Controls[0]).Text;
-            string price = ((TextBox)row.Cells[2].Controls[0]).Text;
-            string description = ((TextBox)row.Cells[3].Controls[0]).Text;
-            string category = ((TextBox)row.Cells[4].Controls[0]).Text;
-            string type = ((TextBox)row.Cells[5].Controls[0]).Text;
-
-            // Kết nối database
-            string connectionString = ConfigurationManager.ConnectionStrings["restaurantConnectionString"].ConnectionString;
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            try
             {
+                // Lấy ID của dòng cần cập nhật
+                int ItemID = Convert.ToInt32(GridView1.DataKeys[e.RowIndex].Value);
+
+                // Lấy dữ liệu từ ô nhập
+                GridViewRow row = GridView1.Rows[e.RowIndex];
+                string name = ((TextBox)row.Cells[1].Controls[0]).Text;
+                string price = ((TextBox)row.Cells[2].Controls[0]).Text;
+                string description = ((TextBox)row.Cells[3].Controls[0]).Text;
+                string category = ((TextBox)row.Cells[4].Controls[0]).Text;
+                string type = ((TextBox)row.Cells[5].Controls[0]).Text;
+
+                if (!clsDatabase.OpenConnection())
+                {
+                    ShowAlert("Không thể kết nối cơ sở dữ liệu!");
+                    return;
+                }
+
                 string query = "UPDATE MenuItems SET Name=@Name, Price=@Price, Description=@Description, Category=@Category, Type=@Type WHERE ItemID=@ID";
 
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+                using (SqlCommand cmd = new SqlCommand(query, clsDatabase.con))
                 {
                     cmd.Parameters.AddWithValue("@ID", ItemID);
                     cmd.Parameters.AddWithValue("@Name", name);
@@ -176,31 +203,41 @@ namespace WebApplication1
                     cmd.Parameters.AddWithValue("@Category", category);
                     cmd.Parameters.AddWithValue("@Type", type);
 
-                    conn.Open();
                     cmd.ExecuteNonQuery();
                 }
+
+                GridView1.EditIndex = -1; // Thoát chế độ Edit
+                LoadData(); // Cập nhật lại dữ liệu
+                ShowAlert("Cập nhật thành công!");
             }
-
-            GridView1.EditIndex = -1; // Thoát chế độ Edit
-            LoadData(); // Cập nhật lại dữ liệu
+            catch (Exception ex)
+            {
+                ShowAlert("Lỗi khi cập nhật: " + ex.Message);
+            }
+            finally
+            {
+                clsDatabase.CloseConnection();
+            }
         }
-
 
         protected void GridView1_RowDeleting(object sender, GridViewDeleteEventArgs e)
         {
             try
             {
                 int itemId = Convert.ToInt32(GridView1.DataKeys[e.RowIndex].Values["ItemID"]);
+
+                if (!clsDatabase.OpenConnection())
+                {
+                    ShowAlert("Không thể kết nối cơ sở dữ liệu!");
+                    return;
+                }
+
                 string query = "DELETE FROM MenuItems WHERE ItemID=@ItemID";
 
-                using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["restaurantConnectionString"].ConnectionString))
+                using (SqlCommand cmd = new SqlCommand(query, clsDatabase.con))
                 {
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@ItemID", itemId);
-                        conn.Open();
-                        cmd.ExecuteNonQuery();
-                    }
+                    cmd.Parameters.AddWithValue("@ItemID", itemId);
+                    cmd.ExecuteNonQuery();
                 }
 
                 LoadData();
@@ -209,6 +246,10 @@ namespace WebApplication1
             catch (Exception ex)
             {
                 ShowAlert("Lỗi khi xóa: " + ex.Message);
+            }
+            finally
+            {
+                clsDatabase.CloseConnection();
             }
         }
 
@@ -258,27 +299,27 @@ namespace WebApplication1
                     }
                 }
 
-                // Chuỗi kết nối
-                string connectionString = ConfigurationManager.ConnectionStrings["restaurantConnectionString"].ConnectionString;
+                // Mở kết nối CSDL
+                if (!clsDatabase.OpenConnection())
+                {
+                    ShowAlert("Không thể kết nối cơ sở dữ liệu!");
+                    return;
+                }
 
-                // Câu lệnh SQL INSERT (LOẠI BỎ CONVERT)
+                // Câu lệnh SQL INSERT
                 string query = "INSERT INTO MenuItems (Name, Price, Description, Category, Image, Type) " +
                                "VALUES (@Name, @Price, @Description, @Category, @Image, @Type)";
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                using (SqlCommand cmd = new SqlCommand(query, clsDatabase.con))
                 {
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@Name", name);
-                        cmd.Parameters.AddWithValue("@Price", price);
-                        cmd.Parameters.AddWithValue("@Description", description);
-                        cmd.Parameters.AddWithValue("@Category", category);
-                        cmd.Parameters.Add("@Image", SqlDbType.VarBinary, -1).Value = imageData; // Đảm bảo đúng kiểu dữ liệu
-                        cmd.Parameters.AddWithValue("@Type", type);
+                    cmd.Parameters.AddWithValue("@Name", name);
+                    cmd.Parameters.AddWithValue("@Price", price);
+                    cmd.Parameters.AddWithValue("@Description", description);
+                    cmd.Parameters.AddWithValue("@Category", category);
+                    cmd.Parameters.Add("@Image", SqlDbType.VarBinary, -1).Value = imageData; // Đảm bảo đúng kiểu dữ liệu
+                    cmd.Parameters.AddWithValue("@Type", type);
 
-                        conn.Open();
-                        cmd.ExecuteNonQuery();
-                    }
+                    cmd.ExecuteNonQuery();
                 }
 
                 // Hiển thị thông báo thành công và làm mới form
@@ -296,14 +337,11 @@ namespace WebApplication1
             {
                 ShowAlert("Lỗi khi thêm món ăn: " + ex.Message);
             }
+            finally
+            {
+                clsDatabase.CloseConnection();
+            }
         }
-
-
-
-
-
-
-
 
         protected void btnSearch_Click(object sender, EventArgs e)
         {
@@ -313,19 +351,34 @@ namespace WebApplication1
 
         private void LoadMenuItems(string keyword)
         {
-            string connString = ConfigurationManager.ConnectionStrings["restaurantConnectionString"].ConnectionString;
-            using (SqlConnection conn = new SqlConnection(connString))
+            try
             {
+                if (!clsDatabase.OpenConnection())
+                {
+                    ShowAlert("Không thể kết nối cơ sở dữ liệu!");
+                    return;
+                }
+
                 string query = "SELECT * FROM MenuItems WHERE Name LIKE @Keyword";
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+                using (SqlCommand cmd = new SqlCommand(query, clsDatabase.con))
                 {
                     cmd.Parameters.AddWithValue("@Keyword", "%" + keyword + "%");
-                    SqlDataAdapter da = new SqlDataAdapter(cmd);
-                    DataTable dt = new DataTable();
-                    da.Fill(dt);
-                    GridView1.DataSource = dt;
-                    GridView1.DataBind();
+                    using (SqlDataAdapter da = new SqlDataAdapter(cmd))
+                    {
+                        DataTable dt = new DataTable();
+                        da.Fill(dt);
+                        GridView1.DataSource = dt;
+                        GridView1.DataBind();
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                ShowAlert("Lỗi khi tìm kiếm: " + ex.Message);
+            }
+            finally
+            {
+                clsDatabase.CloseConnection();
             }
         }
 
@@ -337,8 +390,7 @@ namespace WebApplication1
 
         private void BindGridView()
         {
-            // Giả sử bạn đang lấy dữ liệu từ CSDL, thay thế DataTable bằng cách truy vấn thực tế
-            string query = "SELECT * FROM MenuItems"; // Thay bằng truy vấn thực tế
+            string query = "SELECT * FROM MenuItems";
             DataTable dt = GetData(query);
             GridView1.DataSource = dt;
             GridView1.DataBind();
@@ -346,21 +398,33 @@ namespace WebApplication1
 
         private DataTable GetData(string query)
         {
-            string connString = ConfigurationManager.ConnectionStrings["restaurantConnectionString"].ConnectionString;
-            using (SqlConnection conn = new SqlConnection(connString))
+            DataTable dt = new DataTable();
+            try
             {
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+                if (!clsDatabase.OpenConnection())
+                {
+                    ShowAlert("Không thể kết nối cơ sở dữ liệu!");
+                    return dt;
+                }
+
+                using (SqlCommand cmd = new SqlCommand(query, clsDatabase.con))
                 {
                     using (SqlDataAdapter sda = new SqlDataAdapter(cmd))
                     {
-                        DataTable dt = new DataTable();
                         sda.Fill(dt);
-                        return dt;
                     }
                 }
             }
+            catch (Exception ex)
+            {
+                ShowAlert("Lỗi khi tải dữ liệu: " + ex.Message);
+            }
+            finally
+            {
+                clsDatabase.CloseConnection();
+            }
+            return dt;
         }
-
 
 
 
