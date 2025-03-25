@@ -7,7 +7,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace restaurant
+namespace WebAplication1
 {
 
 
@@ -24,22 +24,22 @@ namespace restaurant
         protected global::System.Web.UI.HtmlControls.HtmlForm form1;
 
         /// <summary>
-        /// txtUserID control.
+        /// ddlUsername control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.TextBox txtUserID;
+        protected global::System.Web.UI.WebControls.DropDownList ddlUsername;
 
         /// <summary>
-        /// txtTableID control.
+        /// ddlTableID control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.TextBox txtTableID;
+        protected global::System.Web.UI.WebControls.DropDownList ddlTableID;
 
         /// <summary>
         /// txtDateTime control.

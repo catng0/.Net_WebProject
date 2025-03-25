@@ -1,4 +1,4 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Table.aspx.cs" Inherits="restaurant.Table" %>
+﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Table.aspx.cs" Inherits="WebAplication1.Table" %>
 
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -171,9 +171,9 @@
         function toggleAddTableForm() {
             var addTableForm = document.getElementById("addTableForm");
             if (addTableForm.style.display === "none" || addTableForm.style.display === "") {
-                addTableForm.style.display = "flex"; // Hiển thị form
+                addTableForm.style.display = "flex"; 
             } else {
-                addTableForm.style.display = "none"; // Ẩn form
+                addTableForm.style.display = "none"; 
             }
         }
     </script>
@@ -211,50 +211,62 @@
             <div class="grid-container">
                 <div class="grid-box">
                     <asp:GridView ID="GridView1" runat="server" CssClass="gridview" AutoGenerateColumns="False"
-                        OnRowEditing="GridView1_RowEditing" OnRowUpdating="GridView1_RowUpdating" OnRowCancelingEdit="GridView1_RowCancelingEdit" 
                         OnRowCommand="GridView_RowCommand"
                         DataKeyNames="TableID">
                         <Columns>
-            <asp:BoundField DataField="TableID" HeaderText="ID" ReadOnly="True" />
-            <asp:TemplateField HeaderText="Seats">
-                <ItemTemplate>
-                    <%# Eval("Seats") %>
-                </ItemTemplate>
-                <EditItemTemplate>
-                    <asp:TextBox ID="txtSeatsEdit" runat="server" Text='<%# Bind("Seats") %>' CssClass="form-control txtSeatsEdit"></asp:TextBox>
-                </EditItemTemplate>
-            </asp:TemplateField>
+                            <asp:BoundField DataField="TableID" HeaderText="ID" ReadOnly="True" />
+                            <asp:TemplateField HeaderText="Seats">
+                                <ItemTemplate>
+                                    <%# Eval("Seats") %>
+                                </ItemTemplate>
+                                <EditItemTemplate>
+                                    <asp:TextBox ID="txtSeatsEdit" runat="server" Text='<%# Bind("Seats") %>' CssClass="form-control txtSeatsEdit"></asp:TextBox>
+                                </EditItemTemplate>
+                            </asp:TemplateField>
             
-            <asp:BoundField DataField="Status" HeaderText="Status" ReadOnly="True" />
+                            <asp:BoundField DataField="Status" HeaderText="Status" ReadOnly="True" />
             
-            <asp:TemplateField HeaderText="Actions">
-                <ItemTemplate>
-                    <asp:Button CommandName="ChangeStatus" CommandArgument='<%# Eval("TableID") %>' CssClass="btn status-btn" runat="server" Text='<%# Eval("Status") %>' />
-                    <asp:Button CommandName="EditTable" CommandArgument='<%# Container.DataItemIndex %>' CssClass="btn edit-btn" runat="server" Text="Edit" />
-                    <asp:Button CommandName="DeleteTable" CommandArgument='<%# Eval("TableID") %>' CssClass="btn delete-btn" runat="server" Text="Delete" OnClientClick="return confirm('Are you sure you want to delete this table?');" />
-                </ItemTemplate>
-                <EditItemTemplate>
-                    <asp:Button CommandName="UpdateTable" CommandArgument='<%# Eval("TableID") %>' CssClass="btn editSeat-btn" runat="server" Text="Update" />
-                    <asp:Button CommandName="CancelEdit" CssClass="btn editSeat-btn" runat="server" Text="Cancel" />
-                </EditItemTemplate>
-            </asp:TemplateField>
-        </Columns>
-                    </asp:GridView>
-                </div>
-                <div class="grid-box">
-                    <asp:GridView ID="GridView2" runat="server" CssClass="gridview" AutoGenerateColumns="False" 
-                        OnRowCommand="GridView_RowCommand">
-                        <Columns>
-                            <asp:BoundField DataField="TableID" HeaderText="ID" />
-                            <asp:BoundField DataField="Status" HeaderText="Status" />
-                            <asp:BoundField DataField="Seats" HeaderText="Seats" />
-
                             <asp:TemplateField HeaderText="Actions">
                                 <ItemTemplate>
                                     <asp:Button CommandName="ChangeStatus" CommandArgument='<%# Eval("TableID") %>' CssClass="btn status-btn" runat="server" Text='<%# Eval("Status") %>' />
-                                    <asp:Button CommandName="EditTable" CommandArgument='<%# Eval("TableID") %>' CssClass="btn edit-btn" runat="server" Text="Edit" />
+                                    <asp:Button CommandName="EditTable" CommandArgument='<%# Container.DataItemIndex %>' CssClass="btn edit-btn" runat="server" Text="Edit" />
                                     <asp:Button CommandName="DeleteTable" CommandArgument='<%# Eval("TableID") %>' CssClass="btn delete-btn" runat="server" Text="Delete" OnClientClick="return confirm('Are you sure you want to delete this table?');" />
                                 </ItemTemplate>
+                                <EditItemTemplate>
+                                    <asp:Button CommandName="UpdateTable" CommandArgument='<%# Eval("TableID") %>' CssClass="btn editSeat-btn" runat="server" Text="Update" />
+                                    <asp:Button CommandName="CancelEdit" CssClass="btn editSeat-btn" runat="server" Text="Cancel" />
+                                </EditItemTemplate>
+                            </asp:TemplateField>
+                        </Columns>
+                    </asp:GridView>
+                </div>
+                <div class="grid-box">
+                    <asp:GridView ID="GridView2" runat="server" CssClass="gridview" AutoGenerateColumns="False"
+                        OnRowCommand="GridView_RowCommand"
+                        DataKeyNames="TableID">
+                        <Columns>
+                            <asp:BoundField DataField="TableID" HeaderText="ID" ReadOnly="True" />
+                            <asp:TemplateField HeaderText="Seats">
+                                <ItemTemplate>
+                                    <%# Eval("Seats") %>
+                                </ItemTemplate>
+                                <EditItemTemplate>
+                                    <asp:TextBox ID="txtSeatsEdit" runat="server" Text='<%# Bind("Seats") %>' CssClass="form-control txtSeatsEdit"></asp:TextBox>
+                                </EditItemTemplate>
+                            </asp:TemplateField>
+            
+                            <asp:BoundField DataField="Status" HeaderText="Status" ReadOnly="True" />
+            
+                            <asp:TemplateField HeaderText="Actions">
+                                <ItemTemplate>
+                                    <asp:Button CommandName="ChangeStatus" CommandArgument='<%# Eval("TableID") %>' CssClass="btn status-btn" runat="server" Text='<%# Eval("Status") %>' />
+                                    <asp:Button CommandName="EditTable" CommandArgument='<%# Container.DataItemIndex %>' CssClass="btn edit-btn" runat="server" Text="Edit" />
+                                    <asp:Button CommandName="DeleteTable" CommandArgument='<%# Eval("TableID") %>' CssClass="btn delete-btn" runat="server" Text="Delete" OnClientClick="return confirm('Are you sure you want to delete this table?');" />
+                                </ItemTemplate>
+                                <EditItemTemplate>
+                                    <asp:Button CommandName="UpdateTable" CommandArgument='<%# Eval("TableID") %>' CssClass="btn editSeat-btn" runat="server" Text="Update" />
+                                    <asp:Button CommandName="CancelEdit" CssClass="btn editSeat-btn" runat="server" Text="Cancel" />
+                                </EditItemTemplate>
                             </asp:TemplateField>
                         </Columns>
                     </asp:GridView>

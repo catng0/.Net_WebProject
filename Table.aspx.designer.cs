@@ -7,7 +7,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace restaurant
+namespace WebAplication1
 {
 
 

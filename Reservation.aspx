@@ -1,4 +1,4 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Reservation.aspx.cs" Inherits="restaurant.Reservation" %>
+﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Reservation.aspx.cs" Inherits="WebAplication1.Reservation" %>
 
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -45,6 +45,9 @@
         }
         .edit-btn {
             background-color: orange;
+        }
+        .status-btn {
+            background-color: green;
         }
         .delete-btn {
             background-color: red;
@@ -161,30 +164,80 @@
                     <label for="txtTableID">ID Table:</label>
                     <asp:TextBox ID="txtTableID" runat="server" placeholder="ID Table"></asp:TextBox>
                 </div>
+                <div class="filter-group">
+                    <label for="ddlStatus">Status:</label>
+                    <asp:DropDownList ID="ddlStatus" runat="server">
+                        <asp:ListItem Text="All" Value="" Selected="True"></asp:ListItem>
+                        <asp:ListItem Text="Completed" Value="1"></asp:ListItem>
+                        <asp:ListItem Text="Waiting" Value="0"></asp:ListItem>
+                    </asp:DropDownList>
+                </div>
                 <div class="filter-group filter-buttons">
                     <asp:Button ID="btnFilter" runat="server" CssClass="btn btn-filter" Text="Filter" OnClick="btnFilter_Click" />
                     <asp:Button ID="btnCancelFilter" runat="server" CssClass="btn btn-cancel" Text="Cancel" OnClick="btnCancelFilter_Click" />
                 </div>
             </div>
             <asp:Button ID="btnNewReservation" runat="server" CssClass="add-btn" Text="New Reservation" OnClick="btnNewReservation_Click" />
-            <asp:GridView ID="GridViewReservations" runat="server" CssClass="gridview" AutoGenerateColumns="False" OnRowCommand="GridViewReservations_RowCommand">
+
+            <asp:GridView ID="GridViewReservations" runat="server" CssClass="gridview" AutoGenerateColumns="False" 
+                OnRowCommand="GridViewReservations_RowCommand" OnRowDataBound="GridViewReservations_RowDataBound" DataKeyNames="ReservationID">
                 <Columns>
-                    <asp:BoundField DataField="ReservationID" HeaderText="ID" />
-                    <asp:BoundField DataField="Username" HeaderText="Customer Name" />
-                    <asp:BoundField DataField="TableID" HeaderText="ID Table" />
-                    <asp:BoundField DataField="DateTime" HeaderText="Arrive Time" DataFormatString="{0:dd/MM/yyyy HH:mm}" />
+                    <asp:BoundField DataField="ReservationID" HeaderText="ID" ReadOnly="True" />
+                    <asp:TemplateField HeaderText="Customer Name">
+                        <ItemTemplate>
+                            <%# Eval("Username") %>
+                        </ItemTemplate>
+                        <EditItemTemplate>
+                            <asp:DropDownList ID="ddlUsername" runat="server"></asp:DropDownList>
+                        </EditItemTemplate>
+                    </asp:TemplateField>
+
+                    <asp:TemplateField HeaderText="ID Table">
+                        <ItemTemplate>
+                            <%# Eval("TableID") %>
+                        </ItemTemplate>
+                        <EditItemTemplate>
+                            <asp:DropDownList ID="ddlTableID" runat="server"></asp:DropDownList>
+                        </EditItemTemplate>
+                    </asp:TemplateField>
+
+                    <asp:TemplateField HeaderText="Status">
+                        <ItemTemplate>
+                            <%# Convert.ToBoolean(Eval("Status")) ? "Completed" : "Waiting" %>
+                        </ItemTemplate>
+                    </asp:TemplateField>
+
+        
+                    <asp:TemplateField HeaderText="Arrive Time">
+                        <ItemTemplate>
+                            <%# Eval("DateTime", "{0:dd/MM/yyyy HH:mm}") %>
+                        </ItemTemplate>
+                        <EditItemTemplate>
+                            <asp:TextBox ID="txtDateTime" runat="server" TextMode="DateTimeLocal"></asp:TextBox>
+                        </EditItemTemplate>
+                    </asp:TemplateField>
+
+        
                     <asp:TemplateField HeaderText="Actions">
                         <ItemTemplate>
+                            <asp:Button CommandName="ChangeStatus" CommandArgument='<%# Eval("ReservationID") %>' 
+                                CssClass="btn status-btn" runat="server" 
+                                Text='<%# Convert.ToBoolean(Eval("Status")) ? "Completed" : "Waiting" %>' />
                             <asp:Button CommandName="EditReservation" CommandArgument='<%# Eval("ReservationID") %>' CssClass="btn edit-btn" runat="server" Text="Edit" />
                             <asp:Button CommandName="DeleteReservation" CommandArgument='<%# Eval("ReservationID") %>' CssClass="btn delete-btn" runat="server" Text="Delete" OnClientClick="return confirm('Are you sure to delete this reservation?');" />
                         </ItemTemplate>
+                        <EditItemTemplate>
+                            <asp:Button CommandName="UpdateReservation" CommandArgument='<%# Eval("ReservationID") %>' CssClass="btn status-btn" runat="server" Text="Update" />
+                            <asp:Button CommandName="CancelReservation" CommandArgument='<%# Eval("ReservationID") %>' CssClass="btn delete-btn" runat="server" Text="Cancel" />
+                        </EditItemTemplate>
                     </asp:TemplateField>
                 </Columns>
             </asp:GridView>
+
             <div class="pagination">
                 <asp:Button ID="btnPrevious" runat="server" CssClass="btn-pagination" Text="Previous" OnClick="btnPrevious_Click" />
                 <asp:Label ID="lblPageInfo" runat="server" CssClass="pageNumber" Text="1"></asp:Label>
-                <asp:Button ID="btnNext" runat="server" CssClass="btn-pagination" Text="Ne" OnClick="btnNext_Click" />
+                <asp:Button ID="btnNext" runat="server" CssClass="btn-pagination" Text="Next" OnClick="btnNext_Click" />
             </div>
         </form>
     </div>
