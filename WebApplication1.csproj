@@ -122,6 +122,7 @@
     <Content Include="MenuItem.aspx" />
     <Content Include="MenuItemDetail.aspx" />
 	<Content Include="Reservation.aspx" />
+	  <Content Include="CreateReservation.aspx" />
     <Content Include="ReservationPage.aspx" />
     <Content Include="Scripts\bootstrap.bundle.js" />
     <Content Include="Scripts\bootstrap.bundle.min.js" />
