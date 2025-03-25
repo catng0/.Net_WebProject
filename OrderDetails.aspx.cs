@@ -4,6 +4,7 @@ using System.Data.SqlClient;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 
+
 namespace WebApplication1
 {
     public partial class OrderDetails : System.Web.UI.Page
@@ -17,8 +18,42 @@ namespace WebApplication1
                 LoadMenuItems();
                 LoadOrderDetails();
                 GridView2.Visible = false;
+                BindData();
             }
         }
+        public void BindData()
+        {
+            // Kiểm tra kết nối đến cơ sở dữ liệu
+            if (clsDatabase.OpenConnection())
+            {
+                // Định nghĩa câu lệnh SQL để lấy dữ liệu từ bảng MenuItems
+                string query = "SELECT ItemID, Name, Price, Description, Category, Image, Type FROM MenuItems";
+
+                // Khai báo SqlCommand để thực thi câu lệnh SQL
+                SqlCommand cmd = new SqlCommand(query, clsDatabase.con);
+
+                // Tạo đối tượng SqlDataAdapter để đổ dữ liệu vào DataTable
+                SqlDataAdapter da = new SqlDataAdapter(cmd);
+                DataTable dt = new DataTable();
+
+                // Điền dữ liệu vào DataTable từ SqlDataAdapter
+                da.Fill(dt);
+
+                // Gán DataTable vào GridView để  hiển thị dữ liệu
+                GridView1.DataSource = dt;
+                GridView1.DataBind();
+                Response.Write("data loaded");
+
+                // Đóng kết nối sau khi hoàn tất
+                clsDatabase.CloseConnection();
+            }
+            else
+            {
+                // Nếu không thể kết nối cơ sở dữ liệu
+                Response.Write("Không thể kết nối đến cơ sở dữ liệu.");
+            }
+        }
+
 
         private void LoadMenuItems()
         {
@@ -222,21 +257,21 @@ namespace WebApplication1
                 Response.Write("Không thể tạo đơn hàng do chưa chọn món !");
                 return; // Không tạo đơn nếu giỏ hàng trống
             }
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                conn.Open();
-                // Thêm đơn hàng vào cơ sở dữ liệu
-                string createOrderQuery = "INSERT INTO Orders (UserID, Status, TotalPrice) OUTPUT INSERTED.OrderID VALUES (@UserID, 'Pending', @totalPriceText)";
-                SqlCommand cmd = new SqlCommand(createOrderQuery, conn);
-                cmd.Parameters.AddWithValue("@UserID", userID);
-                cmd.Parameters.AddWithValue("@totalPriceText", totalPrice);
-                orderID = (int)cmd.ExecuteScalar();
-            }
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    conn.Open();
+                    // Thêm đơn hàng vào cơ sở dữ liệu
+                    string createOrderQuery = "INSERT INTO Orders (UserID, Status, TotalPrice) OUTPUT INSERTED.OrderID VALUES (@UserID, 'Pending', @totalPriceText)";
+                    SqlCommand cmd = new SqlCommand(createOrderQuery, conn);
+                    cmd.Parameters.AddWithValue("@UserID", userID);
+                    cmd.Parameters.AddWithValue("@totalPriceText", totalPrice);
+                    orderID = (int)cmd.ExecuteScalar();
+                }
 
-            lblTotalPrice.Text = "0"; // Reset tổng tiền sau khi tạo đơn
-            LoadOrderDetails(); // Tải lại chi tiết đơn hàng
-            Response.Write("Đơn hàng mới được tạo !");
-
+                lblTotalPrice.Text = "0"; // Reset tổng tiền sau khi tạo đơn
+                LoadOrderDetails(); // Tải lại chi tiết đơn hàng
+                Response.Write("Đơn hàng mới được tạo !");
+           
 
         }
 
