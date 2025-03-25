@@ -122,7 +122,8 @@
     <Content Include="MenuItem.aspx" />
     <Content Include="MenuItemDetail.aspx" />
 	<Content Include="Reservation.aspx" />
-	  <Content Include="CreateReservation.aspx" />
+	<Content Include="CreateReservation.aspx" />
+	<Content Include="Table.aspx" />
     <Content Include="ReservationPage.aspx" />
     <Content Include="Scripts\bootstrap.bundle.js" />
     <Content Include="Scripts\bootstrap.bundle.min.js" />
@@ -233,6 +234,20 @@
 	<Compile Include="CreateReservation.aspx.designer.cs">
 	  <DependentUpon>CreateReservation.aspx</DependentUpon>
 	</Compile>
+	<Compile Include="Reservation.aspx.cs">
+	  <DependentUpon>Reservation.aspx</DependentUpon>
+	  <SubType>ASPXCodeBehind</SubType>
+	</Compile>
+	<Compile Include="Reservation.aspx.designer.cs">
+	  <DependentUpon>Reservation.aspx</DependentUpon>
+	</Compile>
+	<Compile Include="Table.aspx.cs">
+		<DependentUpon>Table.aspx</DependentUpon>
+		<SubType>ASPXCodeBehind</SubType>
+	</Compile>
+	<Compile Include="Table.aspx.designer.cs">
+		<DependentUpon>Table.aspx</DependentUpon>
+	</Compile>  
     <Compile Include="MenuItem.aspx.designer.cs">
       <DependentUpon>MenuItem.aspx</DependentUpon>
     </Compile>
