@@ -8,8 +8,7 @@ namespace WebApplication1
 {
     public partial class OrderDetails : System.Web.UI.Page
     {
-        // Không cần khai báo connection string nữa vì đã dùng clsDatabase
-        // string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["restaurantConnectionString"].ToString();
+        string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["restaurantConnectionString"].ToString();
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -24,7 +23,7 @@ namespace WebApplication1
         private void LoadMenuItems()
         {
             string query = "SELECT * FROM MenuItems";
-            using (SqlConnection conn = clsDatabase.OpenConnection())  // Sử dụng clsDatabase để mở kết nối
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 SqlDataAdapter da = new SqlDataAdapter(query, conn);
                 DataTable dt = new DataTable();
@@ -50,7 +49,7 @@ namespace WebApplication1
             string query = "SELECT mi.Name, od.Quantity, od.Price, od.ItemID FROM OrderDetails od " +
                            "JOIN MenuItems mi ON od.ItemID = mi.ItemID WHERE od.OrderID = @OrderID";
 
-            using (SqlConnection conn = clsDatabase.OpenConnection())  // Sử dụng clsDatabase để mở kết nối
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 SqlCommand cmd = new SqlCommand(query, conn);
                 cmd.Parameters.AddWithValue("@OrderID", orderID);
@@ -71,8 +70,9 @@ namespace WebApplication1
 
         private int GetOrderID(int userID)
         {
-            using (SqlConnection conn = clsDatabase.OpenConnection())  // Sử dụng clsDatabase để mở kết nối
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
+                conn.Open();
                 string query = "SELECT OrderID FROM Orders WHERE UserID = @UserID AND Status = 'Pending'";
                 SqlCommand cmd = new SqlCommand(query, conn);
                 cmd.Parameters.AddWithValue("@UserID", userID);
@@ -90,8 +90,9 @@ namespace WebApplication1
 
             if (orderID == -1)
             {
-                using (SqlConnection conn = clsDatabase.OpenConnection())  // Sử dụng clsDatabase để mở kết nối
+                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
+                    conn.Open();
                     string createOrderQuery = "INSERT INTO Orders (UserID, Status) OUTPUT INSERTED.OrderID VALUES (@UserID, 'Pending')";
                     SqlCommand createOrderCmd = new SqlCommand(createOrderQuery, conn);
                     createOrderCmd.Parameters.AddWithValue("@UserID", userID);
@@ -99,8 +100,9 @@ namespace WebApplication1
                 }
             }
 
-            using (SqlConnection conn = clsDatabase.OpenConnection())  // Sử dụng clsDatabase để mở kết nối
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
+                conn.Open();
                 string checkQuery = "SELECT COUNT(*) FROM OrderDetails WHERE OrderID = @OrderID AND ItemID = @ItemID";
                 SqlCommand checkCmd = new SqlCommand(checkQuery, conn);
                 checkCmd.Parameters.AddWithValue("@OrderID", orderID);
@@ -139,8 +141,9 @@ namespace WebApplication1
                 return;
             }
 
-            using (SqlConnection conn = clsDatabase.OpenConnection())  // Sử dụng clsDatabase để mở kết nối
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
+                conn.Open();
                 string query = "UPDATE OrderDetails SET Quantity = Quantity - 1 WHERE OrderID = @OrderID AND ItemID = @ItemID";
                 SqlCommand cmd = new SqlCommand(query, conn);
                 cmd.Parameters.AddWithValue("@OrderID", orderID);
@@ -184,15 +187,18 @@ namespace WebApplication1
             }
         }
 
+
+
         private void LoadInvoiceDetails(int orderID)
         {
+
             string query = "SELECT o.OrderID, o.OrderTime, mi.Name AS ItemName, od.Quantity, od.Price, (od.Quantity * od.Price) AS TotalPrice " +
                            "FROM Orders o " +
                            "JOIN OrderDetails od ON o.OrderID = od.OrderID " +
                            "JOIN MenuItems mi ON od.ItemID = mi.ItemID " +
                            "WHERE o.OrderID = @OrderID";
 
-            using (SqlConnection conn = clsDatabase.OpenConnection())  // Sử dụng clsDatabase để mở kết nối
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 SqlCommand cmd = new SqlCommand(query, conn);
                 cmd.Parameters.AddWithValue("@OrderID", orderID);
@@ -203,22 +209,66 @@ namespace WebApplication1
                 GridViewInvoice.DataBind();
             }
         }
-
         protected void btnCreateOrder_Click(object sender, EventArgs e)
         {
             int userID = 1; // Giả định UserID lấy từ session
             int orderID = GetOrderID(userID);
+            int totalPrice;
+            bool isValid = int.TryParse(lblTotalPrice.Text, out totalPrice);
 
-            if (orderID == -1)
+            // Kiểm tra xem giỏ hàng có món ăn không
+            if (GridView2.Rows.Count == 0)
             {
-                using (SqlConnection conn = clsDatabase.OpenConnection())  // Sử dụng clsDatabase để mở kết nối
+                Response.Write("Không thể tạo đơn hàng do chưa chọn món !");
+                return; // Không tạo đơn nếu giỏ hàng trống
+            }
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                conn.Open();
+                // Thêm đơn hàng vào cơ sở dữ liệu
+                string createOrderQuery = "INSERT INTO Orders (UserID, Status, TotalPrice) OUTPUT INSERTED.OrderID VALUES (@UserID, 'Pending', @totalPriceText)";
+                SqlCommand cmd = new SqlCommand(createOrderQuery, conn);
+                cmd.Parameters.AddWithValue("@UserID", userID);
+                cmd.Parameters.AddWithValue("@totalPriceText", totalPrice);
+                orderID = (int)cmd.ExecuteScalar();
+            }
+
+            lblTotalPrice.Text = "0"; // Reset tổng tiền sau khi tạo đơn
+            LoadOrderDetails(); // Tải lại chi tiết đơn hàng
+            Response.Write("Đơn hàng mới được tạo !");
+
+
+        }
+
+        protected void btnCancelOrder_Click(object sender, EventArgs e)
+        {
+            int userID = 1; // Giả định UserID lấy từ session
+            int orderID = GetOrderID(userID);
+
+            if (orderID != -1)
+            {
+                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
-                    string createOrderQuery = "INSERT INTO Orders (UserID, Status, TotalPrice) OUTPUT INSERTED.OrderID VALUES (@UserID, 'Pending', 0)";
-                    SqlCommand cmd = new SqlCommand(createOrderQuery, conn);
-                    cmd.Parameters.AddWithValue("@UserID", userID);
-                    orderID = (int)cmd.ExecuteScalar();
+                    conn.Open();
+                    string deleteOrderDetailsQuery = "DELETE FROM OrderDetails WHERE OrderID = @OrderID";
+                    SqlCommand deleteOrderDetailsCmd = new SqlCommand(deleteOrderDetailsQuery, conn);
+                    deleteOrderDetailsCmd.Parameters.AddWithValue("@OrderID", orderID);
+                    deleteOrderDetailsCmd.ExecuteNonQuery();
+
+                    string deleteOrderQuery = "DELETE FROM Orders WHERE OrderID = @OrderID AND Status = 'Pending'";
+                    SqlCommand deleteOrderCmd = new SqlCommand(deleteOrderQuery, conn);
+                    deleteOrderCmd.Parameters.AddWithValue("@OrderID", orderID);
+                    deleteOrderCmd.ExecuteNonQuery();
                 }
+
+                LoadOrderDetails();
+                Response.Write("<script>alert('Đơn hàng đã được hủy!');</script>");
+            }
+            else
+            {
+                Response.Write("<script>alert('Không có đơn hàng nào để hủy!');</script>");
             }
         }
+
     }
 }
