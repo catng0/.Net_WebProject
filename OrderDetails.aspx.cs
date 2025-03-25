@@ -191,6 +191,7 @@ namespace WebApplication1
 
         private void LoadInvoiceDetails(int orderID)
         {
+
             string query = "SELECT o.OrderID, o.OrderTime, mi.Name AS ItemName, od.Quantity, od.Price, (od.Quantity * od.Price) AS TotalPrice " +
                            "FROM Orders o " +
                            "JOIN OrderDetails od ON o.OrderID = od.OrderID " +
