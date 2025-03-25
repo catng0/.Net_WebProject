@@ -226,12 +226,12 @@
       <DependentUpon>MenuItem.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
-	<Compile Include="CreateRestaurant.aspx.cs">
-	  <DependentUpon>CreateRestaurant.aspx</DependentUpon>
+	<Compile Include="CreateReservation.aspx.cs">
+	  <DependentUpon>CreateReservation.aspx</DependentUpon>
 	  <SubType>ASPXCodeBehind</SubType>
     </Compile>
-	<Compile Include="CreateRestaurant.aspx.designer.cs">
-	  <DependentUpon>CreateRestaurant.aspx</DependentUpon>
+	<Compile Include="CreateReservation.aspx.designer.cs">
+	  <DependentUpon>CreateReservation.aspx</DependentUpon>
 	</Compile>
     <Compile Include="MenuItem.aspx.designer.cs">
       <DependentUpon>MenuItem.aspx</DependentUpon>
